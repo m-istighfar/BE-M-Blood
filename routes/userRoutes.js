@@ -18,5 +18,6 @@ router.put("/tasks/:id", userController.updateTask);
 router.delete("/tasks/:id", userController.deleteTask);
 
 // You can add more user-related endpoints here if needed
+router.patch("/tasks/:id/complete", userController.markComplete);
 
 module.exports = router;
