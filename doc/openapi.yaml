@@ -1,0 +1,1310 @@
+openapi: 3.0.0
+info:
+  title: Simple e-learning platform API
+  version: 1.0.0
+servers:
+  # - url: https://inquisitive-outerwear.cyclic.app/
+  #   description: Production server
+  - url: http://localhost:3000
+    description: Development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+tags:
+  - name: auth
+  - name: admin
+  - name: admin > dashboard
+  - name: admin > user
+  - name: admin > course
+  - name: admin > learning path
+  - name: author
+  - name: author > dashboard
+  - name: author > course
+  - name: author > enroll
+  - name: author > profil
+  - name: author > learning path
+  - name: student
+  - name: student > dashboard
+  - name: student > course
+  - name: student > enroll
+  - name: student > profil
+  - name: student > progress
+paths:
+  /auth/register:
+    post:
+      tags:
+        - auth
+      summary: regist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                username: author2
+                password: '123456'
+                email: johnz@example.com
+                role: author
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                username: admin
+                password: '123456'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}
+  /admin/dashboard:
+    get:
+      tags:
+        - admin > dashboard
+      summary: Get Dashboard Admin
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}
+          
+  /admin/listusers:
+    get:
+      tags:
+        - admin > user
+      summary: Get All User
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}            
+  /admin/createUser:
+    post:
+      tags:
+        - admin > user
+      summary: Create User
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                username: author3
+                password: '123456'
+                email: nasdr@eadsple.com
+                role: author
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /admin/updateUser/{id}:
+    put:
+      tags:
+        - admin > user
+      summary: Update User
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                username: adsz
+                email: das@esadsda.com
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /admin/deleteuser/{id}:
+    delete:
+      tags:
+        - admin > user
+      summary: Delete User
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /admin/assignRole:
+    post:
+      tags:
+        - admin > user
+      summary: Assign Role User
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                id: 64ee9f7bb008417c70770263
+                role: student
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}            
+  /admin/createcourse:
+    post:
+      tags:
+        - admin > course
+      summary: Create Course
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                title: dsaads
+                thumbnail: adsdas
+                description: dsadsa
+                authorId: 6143a2308178fed73050e601
+                creationDate: '2023-08-28T12:34:56.789Z'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /admin/updatecourse/{id}:
+    put:
+      tags:
+        - admin > course
+      summary: Update Course
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                title: dsasad
+                thumbnail: adsdsa
+                description: adsdsa
+                authorId: 6143a2308178fed73050e601
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /admin/deletecourse/{id}:
+    delete:
+      tags:
+        - admin > course
+      summary: Delete Course
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}        
+  /admin/listcourses:
+    get:
+      tags:
+        - admin > course
+      summary: Get All Course
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: searchTerm
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+        - name: order
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /admin/createLearningPath:
+    post:
+      tags:
+        - admin > learning path
+      summary: Create LP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                title: Web Development Path
+                description: A comprehensive guide to becoming a web developer.
+                courses:
+                  - 64edbea701118d7d19a40301
+                  - 64ee2daf1dec6e75cb0814d4
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}
+  /admin/listLearningPaths:
+    get:
+      tags:
+        - admin > learning path
+      summary: Get All LP
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /admin/updateLearningPath/{id}:
+    put:
+      tags:
+        - admin > learning path
+      summary: Update LP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                title: AAzzz
+                description: An advanced guide for professional web developers.
+                courses:
+                  - 64ee3deea931f652d78b3d43
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /admin/deleteLearningPath/{id}:
+    delete:
+      tags:
+        - admin > learning path
+      summary: Delete LP
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /admin/addCourse:
+    post:
+      tags:
+        - admin > learning path
+      summary: Add Course to LP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                pathId: 64ee9b49d86430bd37fdfffb
+                courseId: 64edbea701118d7d19a40301
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /admin/deleteCourse/{pathId}/{courseId}:
+    delete:
+      tags:
+        - admin > learning path
+      summary: Delete Course to LP
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pathId
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: courseId
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}            
+  /author/dashboard:
+    get:
+      tags:
+        - author > dashboard
+      summary: Get Dashboard Author
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /author/createcourse:
+    post:
+      tags:
+        - author > course
+      summary: Create Course
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                title: adsdsa
+                thumbnail: ssaddasood
+                description: dasdsa
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /author/listcourses:
+    get:
+      tags:
+        - author > course
+      summary: Get All Couse
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: searchTerm
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+        - name: order
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /author/listowncourses:
+    get:
+      tags:
+        - author > course
+      summary: Get Own Course
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: searchTerm
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+        - name: order
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /author/updateownedcourse/{id}:
+    put:
+      tags:
+        - author > course
+      summary: Update Own Course
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                title: dsasad
+                thumbnail: adsdsa
+                description: adsdsa
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /author/deleteownedcourse/{id}:
+    delete:
+      tags:
+        - author > course
+      summary: Delete Own Course
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}         
+  /author/listenrollrequests:
+    get:
+      tags:
+        - author > enroll
+      summary: Get Enroll List Student
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}   
+  /author/updateEnrollmentStatus/{requestId}:
+    post:
+      tags:
+        - author > enroll
+      summary: Update Status Enroll Student
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                status: accepted
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /author/updateprofile:
+    put:
+      tags:
+        - author > profil
+      summary: Edit Profile Author
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                username: authoredit
+                email: sdasa@gmail.com
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /author/listLearningPaths:
+    get:
+      tags:
+        - author > learning path
+      summary: Get All LP
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /author/addCoursetoPath:
+    post:
+      tags:
+        - author > learning path
+      summary: Add Own Couse to LP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                pathId: 64ee9b49d86430bd37fdfffb
+                courseId: 64edbea701118d7d19a40301
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /author/deleteCoursefromPath/{pathId}/{courseId}:
+    delete:
+      tags:
+        - author > learning path
+      summary: Delete Own Course to LP
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pathId
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: courseId
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /student/dashboard:
+    get:
+      tags:
+        - student > dashboard
+      summary: Get Dasboard Student
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}            
+  /student/viewcourse:
+    get:
+      tags:
+        - student > course
+      summary: Get All Couse
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: searchTerm
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+        - name: order
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}            
+  /student//sendEnrollRequest:
+    post:
+      tags:
+        - student > enroll
+      summary: Send Enroll Request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                courseId: 64edbea701118d7d19a40301
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}            
+  /student/readEnrolledCourseContent:
+    get:
+      tags:
+        - student > enroll
+      summary: Get Enroll Course
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}            
+  /student/unenrollFromCourse:
+    post:
+      tags:
+        - student > enroll
+      summary: Unenroll from Course
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                courseId: 64edbea701118d7d19a40301
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}            
+  /student//updateProfile:
+    put:
+      tags:
+        - student > profil
+      summary: Update Profile Student
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                username: studentedit
+                email: sdasa@gmail.com
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+  /student/markCourseCompleted:
+    post:
+      tags:
+        - student > progress
+      summary: Mark Course Complete
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                courseId: 64edbea701118d7d19a40301
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}            
+  /student/addreview/{courseId}:
+    post:
+      tags:
+        - student > progress
+      summary: Add Review Course
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                rating: 4.5
+                review: >-
+                  This course was very informative and well-structured. Highly
+                  recommend!
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}            
+  /student/progress/{courseId}:
+    get:
+      tags:
+        - student > progress
+      summary: Get Progress
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}           
+    put:
+      tags:
+        - student > progress
+      summary: Update Progress
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                completion: 10
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+        '400':
+          description: Bad request
+          content:
+            application/json: {}
+        '401': 
+          description: Unauthorized
+          content:
+            application/json: {}
+        '500' : 
+          description: Internal Server Error
+          content:
+            application/json: {}            
