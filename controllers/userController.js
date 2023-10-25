@@ -2,7 +2,7 @@ const Task = require("../models/Task");
 
 const getAllTasks = async (req, res) => {
   try {
-    const { search, priority, status, dueDate } = req.query;
+    const { search, priority, status, dueDate, sortOrder } = req.query;
 
     const query = { userId: req.user.id };
     let filteringOrSearching = false;
@@ -27,20 +27,28 @@ const getAllTasks = async (req, res) => {
       filteringOrSearching = true;
     }
 
-    const tasks = await Task.find(query);
+    let sortDirection = 1; // default to ascending
+    if (sortOrder === "desc") {
+      sortDirection = -1;
+    }
+
+    const tasks = await Task.find(query).sort({ dueDate: sortDirection });
+    const count = await Task.countDocuments(query);
 
     if (tasks.length === 0) {
       if (filteringOrSearching) {
         return res
           .status(200)
-          .json({ message: "No tasks found with the given criteria." });
+          .json({ message: "No tasks found with the given criteria.", count });
       }
       return res
         .status(200)
-        .json({ message: "You have no tasks at the moment." });
+        .json({ message: "You have no tasks at the moment.", count });
     }
 
-    res.status(200).json({ message: "Tasks fetched successfully!", tasks });
+    res
+      .status(200)
+      .json({ message: "Tasks fetched successfully!", tasks, count });
   } catch (error) {
     res
       .status(500)
@@ -89,6 +97,13 @@ const updateTask = async (req, res) => {
       return res
         .status(403)
         .json({ error: "Unauthorized: This task does not belong to you" });
+
+    // Check if the task's status is completed
+    if (task.status === "completed")
+      return res
+        .status(400)
+        .json({ error: "Cannot update a task that's already completed" });
+
     task.set(req.body);
     await task.save();
     res.status(200).json({ message: "Task updated successfully!", task });
@@ -110,12 +125,39 @@ const deleteTask = async (req, res) => {
       return res
         .status(403)
         .json({ error: "Unauthorized: This task does not belong to you" });
-    await task.remove();
+    await Task.deleteOne({ _id: req.params.id });
     res.status(200).json({ message: "Task deleted successfully!" });
   } catch (error) {
+    console.error(error);
     if (error.kind === "ObjectId") {
       return res.status(400).json({ error: "Invalid task ID" });
     }
+    res
+      .status(500)
+      .json({ error: "Internal server error. Please try again later." });
+  }
+};
+
+const deleteAllTasks = async (req, res) => {
+  try {
+    // Get the user ID from the request object
+    const userId = req.user.id;
+
+    // Remove all tasks associated with the user ID
+    const result = await Task.deleteMany({ userId });
+
+    // Check the number of tasks deleted
+    if (result.deletedCount === 0) {
+      return res
+        .status(200)
+        .json({ message: "You have no tasks to delete at the moment." });
+    }
+
+    // Send a success response
+    res
+      .status(200)
+      .json({ message: `${result.deletedCount} tasks deleted successfully!` });
+  } catch (error) {
     res
       .status(500)
       .json({ error: "Internal server error. Please try again later." });
@@ -155,5 +197,6 @@ module.exports = {
   createTask,
   updateTask,
   deleteTask,
+  deleteAllTasks,
   markComplete,
 };
