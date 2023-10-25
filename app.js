@@ -37,5 +37,5 @@ app.use("/auth", authRoutes);
 
 app.use("/user", authMiddleware, authorizationMiddleware(["user"]), userRoutes);
 
-const OUT_PORT = process.env.OUT_PORT;
-app.listen(OUT_PORT, () => console.log(`Listening on port ${OUT_PORT}...`));
+const PORT = process.env.PORT;
+app.listen(PORT, () => console.log(`Listening on port ${PORT}...`));
