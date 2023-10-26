@@ -9,8 +9,6 @@ const checkRevokedToken = (token) => {
 const authenticationMiddleware = (req, res, next) => {
   let token;
 
-  console.log("dsasda");
-
   if (req.cookies.accessToken) {
     token = req.cookies.accessToken;
   } else if (req.headers.authorization) {

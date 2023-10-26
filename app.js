@@ -13,7 +13,7 @@ const authMiddleware = require("./middleware/authenticationMiddleware");
 const authorizationMiddleware = require("./middleware/authorizationMiddleware");
 
 const authRoutes = require("./routes/authRoutes");
-// const adminRoutes = require("./routes/adminRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 
 const app = express();
@@ -28,12 +28,12 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use(databaseMiddleware);
 
 app.use("/auth", authRoutes);
-// app.use(
-//   "/admin",
-//   authMiddleware,
-//   authorizationMiddleware(["admin"]),
-//   adminRoutes
-// );
+app.use(
+  "/admin",
+  authMiddleware,
+  authorizationMiddleware(["admin"]),
+  adminRoutes
+);
 
 app.use("/user", authMiddleware, authorizationMiddleware(["user"]), userRoutes);
 
