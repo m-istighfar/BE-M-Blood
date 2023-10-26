@@ -116,70 +116,6 @@ const login = async (req, res) => {
   }
 };
 
-const loginWihSession = async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    const existingUser = await User.findOne({ username });
-    if (!existingUser)
-      return res.status(400).json({ error: "User does not exist" });
-
-    if (!existingUser.verified)
-      return res.status(400).json({
-        error: "Email not verified. Please verify your email first.",
-      });
-
-    const isPasswordCorrect = await bcrypt.compare(
-      password,
-      existingUser.password
-    );
-
-    if (isPasswordCorrect) {
-      const accessToken = jwt.sign(
-        {
-          username: existingUser.username,
-          id: existingUser._id,
-          role: existingUser.role,
-        },
-        JWT_SIGN,
-        { expiresIn: ACCESS_TOKEN_EXPIRATION }
-      );
-
-      const refreshToken = jwt.sign(
-        {
-          username: existingUser.username,
-          id: existingUser._id,
-          role: existingUser.role,
-        },
-        JWT_REFRESH_SIGN,
-        { expiresIn: REFRESH_TOKEN_EXPIRATION }
-      );
-
-      res.cookie("accessToken", accessToken, {
-        httpOnly: true,
-        maxAge: 60 * 60 * 1000,
-      });
-
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-      res.status(200).json({
-        message: "Login successful",
-        accessToken,
-        refreshToken,
-        accessTokenExp: ACCESS_TOKEN_EXPIRATION,
-        refreshTokenExp: REFRESH_TOKEN_EXPIRATION,
-        role: existingUser.role,
-      });
-    } else {
-      res.status(400).json({ error: "Password is incorrect" });
-    }
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
 const refreshTokenHandler = async (req, res) => {
   const { refreshToken } = req.body;
 
@@ -221,34 +157,9 @@ const refreshTokenHandler = async (req, res) => {
   });
 };
 
-const logoutWithSession = (req, res) => {
-  let accessToken = req.cookies["accessToken"];
-  let refreshToken = req.cookies["refreshToken"];
-
-  if (!accessToken && req.headers.authorization) {
-    accessToken = req.headers.authorization.split(" ")[1];
-  }
-
-  if (accessToken) {
-    const expiresIn = jwt.decode(accessToken).exp * 1000 - Date.now();
-    cache.put(`blacklist_accessToken_${accessToken}`, true, expiresIn);
-  }
-
-  if (refreshToken) {
-    const expiresIn = jwt.decode(refreshToken).exp * 1000 - Date.now();
-    cache.put(`blacklist_refreshToken_${refreshToken}`, true, expiresIn);
-  }
-
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken");
-  res.status(200).json({ message: "Logged out successfully" });
-};
-
 module.exports = {
   register,
   verifyEmail,
   login,
   refreshTokenHandler,
-  loginWihSession,
-  logoutWithSession,
 };

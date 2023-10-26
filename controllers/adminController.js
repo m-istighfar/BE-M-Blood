@@ -4,10 +4,50 @@ const bcrypt = require("bcrypt");
 
 exports.listUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password");
-    res.status(200).json(users);
+    const users = await User.aggregate([
+      { $match: {} },
+      {
+        $lookup: {
+          from: "tasks",
+          localField: "_id",
+          foreignField: "userId",
+          as: "tasks",
+        },
+      },
+      {
+        $project: {
+          username: 1,
+          email: 1,
+          role: 1,
+          pendingTask: {
+            $size: {
+              $filter: {
+                input: "$tasks",
+                as: "task",
+                cond: { $eq: ["$$task.status", "pending"] },
+              },
+            },
+          },
+          completedTask: {
+            $size: {
+              $filter: {
+                input: "$tasks",
+                as: "task",
+                cond: { $eq: ["$$task.status", "completed"] },
+              },
+            },
+          },
+        },
+      },
+    ]);
+
+    res.status(200).json({ success: true, data: users });
   } catch (error) {
-    res.status(500).json({ error: "An error occurred while fetching users" });
+    console.error("Error listing users:", error);
+    res.status(500).json({
+      success: false,
+      error: "An error occurred while fetching users",
+    });
   }
 };
 
@@ -15,35 +55,35 @@ exports.createUser = async (req, res) => {
   const { username, email, password, role } = req.body;
 
   try {
-    const existingUserByUsername = await User.findOne({ username });
-    const existingUserByEmail = await User.findOne({ email });
+    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
 
-    console.log(existingUserByUsername);
-
-    if (existingUserByUsername) {
-      return res.status(400).json({ error: "Username already exists" });
-    }
-
-    if (existingUserByEmail) {
-      return res.status(400).json({ error: "Email already exists" });
+    if (existingUser) {
+      const errorField =
+        existingUser.username === username ? "Username" : "Email";
+      return res
+        .status(400)
+        .json({ success: false, error: `${errorField} already exists` });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({
+    const newUser = await User.create({
       username,
       email,
       password: hashedPassword,
       role,
-      verified: true,
+      verified: true, // Ensure this is intended, as all users will be marked as verified upon creation.
     });
 
-    await newUser.save();
+    // Hiding the password field in the response.
+    newUser.password = undefined;
 
-    res.status(201).json(newUser);
+    res.status(201).json({ success: true, data: newUser });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "An error occurred while creating the user" });
+    console.error("Error creating user:", error);
+    res.status(500).json({
+      success: false,
+      error: "An error occurred while creating the user",
+    });
   }
 };
 
@@ -57,11 +97,21 @@ exports.updateUser = async (req, res) => {
       { username, email },
       { new: true }
     );
-    res.status(200).json({ message: "update succes", updatedUser });
+
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, error: "User not found" });
+    }
+
+    // Hiding the password field in the response.
+    updatedUser.password = undefined;
+
+    res.status(200).json({ success: true, data: updatedUser });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "An error occurred while updating the user" });
+    console.error("Error updating user:", error);
+    res.status(500).json({
+      success: false,
+      error: "An error occurred while updating the user",
+    });
   }
 };
 
@@ -71,20 +121,21 @@ exports.deleteUser = async (req, res) => {
   try {
     const user = await User.findById(id);
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ success: false, error: "User not found" });
     }
 
     await Task.deleteMany({ userId: id });
-
     await User.findByIdAndDelete(id);
 
-    res
-      .status(200)
-      .json({ message: "User and related tasks deleted successfully" });
+    res.status(200).json({
+      success: true,
+      message: "User and related tasks deleted successfully",
+    });
   } catch (error) {
-    console.error("Error:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while deleting the user" });
+    console.error("Error deleting user:", error);
+    res.status(500).json({
+      success: false,
+      error: "An error occurred while deleting the user",
+    });
   }
 };
