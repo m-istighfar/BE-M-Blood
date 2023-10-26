@@ -22,7 +22,7 @@ app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(cors());
 
-const openApiPath = "doc/openapi.yaml";
+const openApiPath = "doc/openapi2.yaml";
 const file = fs.readFileSync(openApiPath, "utf8");
 const swaggerDocument = yaml.parse(file);
 

@@ -118,6 +118,13 @@ exports.updateUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   const { id } = req.params;
 
+  if (req.user.id === id) {
+    return res.status(400).json({
+      success: false,
+      error: "You cannot delete yourself",
+    });
+  }
+
   try {
     const user = await User.findById(id);
     if (!user) {
