@@ -89,19 +89,6 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
-exports.assignRole = async (req, res) => {
-  const { id, role } = req.body;
-
-  try {
-    const user = await User.findByIdAndUpdate(id, { role }, { new: true });
-    res.status(200).json({ message: "succes", user });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ error: "An error occurred while assigning the role" });
-  }
-};
-
 exports.updateProfile = async (req, res) => {
   const { username, email } = req.body;
   const id = req.user.id;
