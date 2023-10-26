@@ -12,6 +12,7 @@ const OpenApiValidator = require("express-openapi-validator");
 const databaseMiddleware = require("./middleware/databaseMiddleware");
 const authMiddleware = require("./middleware/authenticationMiddleware");
 const authorizationMiddleware = require("./middleware/authorizationMiddleware");
+const errorFormatter = require("./middleware/errorFormatter");
 
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
@@ -46,17 +47,7 @@ app.use(
 
 app.use("/user", authMiddleware, authorizationMiddleware(["user"]), userRoutes);
 
-app.use((err, req, res, next) => {
-  // If error is from OpenAPI Validator, it will have 'status' and 'errors' properties
-  if (err.status && err.errors) {
-    return res.status(err.status).json({
-      message: "Validation error",
-      errors: err.errors,
-    });
-  }
-  // If it's not a validation error, pass it to the default error handler
-  return next(err);
-});
+app.use(errorFormatter);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}...`));
