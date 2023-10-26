@@ -1,6 +1,8 @@
 const Task = require("../models/Task");
 
 const getAllTasks = async (req, res) => {
+  console.log(req.query);
+
   try {
     const { search, priority, status, dueDate, sortOrder } = req.query;
 
