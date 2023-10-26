@@ -1,9 +1,6 @@
 const User = require("../models/User");
-// const Course = require("../models/course");
-// const bcrypt = require("bcrypt");
-// const Enrollment = require("../models/enrollment");
-// const LearningPath = require("../models/learningpath");
-// const Progress = require("../models/progress");
+const Task = require("../models/Task");
+const bcrypt = require("bcrypt");
 
 exports.listUsers = async (req, res) => {
   try {
@@ -37,9 +34,11 @@ exports.createUser = async (req, res) => {
       email,
       password: hashedPassword,
       role,
+      verified: true,
     });
 
     await newUser.save();
+
     res.status(201).json(newUser);
   } catch (error) {
     res
@@ -75,26 +74,13 @@ exports.deleteUser = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const authoredCourses = await Course.find({ authorId: id });
-
-    const courseIds = authoredCourses.map((course) => course._id);
-
-    await Course.deleteMany({ authorId: id });
-
-    await Enrollment.deleteMany({ studentId: id });
-
-    await Progress.deleteMany({ studentId: id });
-
-    await LearningPath.updateMany(
-      { courses: { $in: courseIds } },
-      { $pullAll: { courses: courseIds } }
-    );
+    await Task.deleteMany({ userId: id });
 
     await User.findByIdAndDelete(id);
 
     res
       .status(200)
-      .json({ message: "User and related records deleted successfully" });
+      .json({ message: "User and related tasks deleted successfully" });
   } catch (error) {
     console.error("Error:", error);
     res
