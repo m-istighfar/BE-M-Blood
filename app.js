@@ -7,6 +7,7 @@ const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const yaml = require("yaml");
 const fs = require("fs");
+const OpenApiValidator = require("express-openapi-validator");
 
 const databaseMiddleware = require("./middleware/databaseMiddleware");
 const authMiddleware = require("./middleware/authenticationMiddleware");
@@ -24,7 +25,15 @@ app.use(cors());
 const openApiPath = "doc/openapi.yaml";
 const file = fs.readFileSync(openApiPath, "utf8");
 const swaggerDocument = yaml.parse(file);
+
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use(
+  OpenApiValidator.middleware({
+    apiSpec: openApiPath,
+    validateRequests: true,
+  })
+);
+
 app.use(databaseMiddleware);
 
 app.use("/auth", authRoutes);
