@@ -1,43 +1,35 @@
-const mongoose = require('mongoose');
-const {
-    generateFakeUsers,
-    generateFakeCourses,
-    generateFakeEnrollments,
-    generateFakeLearningPaths,
-    generateFakeProgressRecords,
-} = require('../helper/helper');
+const mongoose = require("mongoose");
+const { generateFakeUsers, generateFakeTasks } = require("../helper/helper");
+require("dotenv").config();
 
-const clearDatabase = require('./clearDatabase');
+const DB_URL = process.env.DB_URL;
+
+const clearDatabase = require("./clearDatabase");
 
 async function generateFakeData() {
-    try {
-        mongoose.connect(
-            `mongodb://mongo:ZqzyPyhiktfAefq649ku@containers-us-west-88.railway.app:7553`,
-            {
-                useNewUrlParser: true,
+  try {
+    mongoose.connect(`${DB_URL}`, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
 
-                useUnifiedTopology: true,
-            },
-        );
+    await clearDatabase();
 
-        await clearDatabase();
+    const numFakeUsers = 20;
+    const users = await generateFakeUsers(numFakeUsers);
 
-        const numFakeUsers = 20;
-        const users = await generateFakeUsers(numFakeUsers);
+    const tasksPerUser = 9;
+    const taskPromises = users.map(() =>
+      generateFakeTasks(tasksPerUser, users)
+    );
+    await Promise.all(taskPromises);
 
-        const numFakeCourses = 50;
-        const courses = await generateFakeCourses(numFakeCourses, users);
-
-        await generateFakeEnrollments(courses, users);
-
-        await generateFakeLearningPaths(courses);
-
-        await generateFakeProgressRecords(courses, users);
-
-        console.log('Fake data generation completed.');
-    } catch (error) {
-        console.error('Error generating fake data:', error);
-    }
+    console.log("Fake data generation completed.");
+  } catch (error) {
+    console.error("Error generating fake data:", error);
+  } finally {
+    mongoose.connection.close();
+  }
 }
 
 generateFakeData();
