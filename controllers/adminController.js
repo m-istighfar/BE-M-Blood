@@ -20,6 +20,7 @@ exports.listUsers = async (req, res) => {
           email: 1,
           role: 1,
           verified: 1,
+          s
           pendingTask: {
             $size: {
               $filter: {
