@@ -16,7 +16,9 @@ const userLoginLimiter = rateLimit({
   windowMs: windowMs,
   max: 5,
   skipSuccessfulRequests: true,
-  message: "Too many failed login attempts, please try again after 15 minutes.",
+  message: {
+    error: "Too many failed login attempts, please try again after 15 minutes.",
+  },
   keyGenerator: (req) => {
     const key = req.body.username;
     console.log(`Generating key for rate limiter: ${key}`);
