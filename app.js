@@ -14,6 +14,7 @@ const databaseMiddleware = require("./middleware/databaseMiddleware");
 const authMiddleware = require("./middleware/authenticationMiddleware");
 const authorizationMiddleware = require("./middleware/authorizationMiddleware");
 const errorFormatter = require("./middleware/errorFormatter");
+const applyMiddleware = require("./middleware/index");
 
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
@@ -21,9 +22,7 @@ const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 app.use(cookieParser());
-app.use(bodyParser.json());
-app.use(helmet());
-app.use(cors());
+applyMiddleware(app);
 
 const openApiPath = "doc/openapi2.yaml";
 const file = fs.readFileSync(openApiPath, "utf8");
