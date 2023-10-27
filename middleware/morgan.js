@@ -7,7 +7,7 @@ module.exports = (app) => {
   const accessLogStream = rfs.createStream("request.log", {
     interval: "1d",
     path: path.join(__dirname, "../logger"),
-    size: "1K",
+    size: "10M",
     maxFiles: 5,
   });
 
