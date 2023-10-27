@@ -1,51 +1,54 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
+const smtp = require("nodemailer-smtp-transport");
 
 const FE_URL = process.env.FE_URL;
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
+const transporter = nodemailer.createTransport(
+  smtp({
+    service: "gmail",
     auth: {
-        user: 'daiqijb105@gmail.com',
-        pass: 'elrvbtfvypzvosdr',
+      user: "daiqijb105@gmail.com",
+      pass: "elrvbtfvypzvosdr",
     },
-});
+  })
+);
 
 const sendMail = async (options) => {
-    try {
-        await transporter.sendMail(options);
-        return { success: true };
-    } catch (error) {
-        console.error('Mail send error:', error);
-        return { success: false, error };
-    }
+  try {
+    await transporter.sendMail(options);
+    return { success: true };
+  } catch (error) {
+    console.error("Mail send error:", error);
+    return { success: false, error };
+  }
 };
 
 const sendVerificationEmail = async (email, token) => {
-    const verificationLink = `${FE_URL}/verify-email/${token}`;
+  const verificationLink = `${FE_URL}/verify-email/${token}`;
 
-    const mailOptions = {
-        from: 'daiqijb105@gmail.com',
-        to: email,
-        subject: 'Email Verification',
-        text: `Click on the link to verify your email: ${verificationLink}`,
-    };
+  const mailOptions = {
+    from: "daiqijb105@gmail.com",
+    to: email,
+    subject: "Email Verification",
+    text: `Click on the link to verify your email: ${verificationLink}`,
+  };
 
-    return await sendMail(mailOptions);
+  return await sendMail(mailOptions);
 };
 
 const sendPasswordResetEmail = async (email, resetToken) => {
-    const resetLink = `${FE_URL}/reset-password/${resetToken}`;
-    const mailOptions = {
-        from: 'daiqijb105@gmail.com',
-        to: email,
-        subject: 'Password Reset Request',
-        text: `Please click on the following link, or paste this into your browser to complete the process within one hour: \n\n${resetLink}\n\n If you did not request this, please ignore this email and your password will remain unchanged.\n`,
-    };
+  const resetLink = `${FE_URL}/reset-password/${resetToken}`;
+  const mailOptions = {
+    from: "daiqijb105@gmail.com",
+    to: email,
+    subject: "Password Reset Request",
+    text: `Please click on the following link, or paste this into your browser to complete the process within one hour: \n\n${resetLink}\n\n If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+  };
 
-    return await sendMail(mailOptions);
+  return await sendMail(mailOptions);
 };
 
 module.exports = {
-    sendVerificationEmail,
-    sendPasswordResetEmail,
+  sendVerificationEmail,
+  sendPasswordResetEmail,
 };
