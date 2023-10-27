@@ -2,7 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const bodyParser = require("body-parser");
-const helmet = require;
+const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
