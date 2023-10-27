@@ -71,7 +71,7 @@ exports.createUser = async (req, res) => {
       email,
       password: hashedPassword,
       role,
-      verified: true, // Ensure this is intended, as all users will be marked as verified upon creation.
+      verified: true,
     });
 
     // Hiding the password field in the response.

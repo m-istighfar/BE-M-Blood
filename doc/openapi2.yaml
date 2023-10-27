@@ -475,8 +475,8 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              example:
+                $ref: '#/components/schemas/User'
+                example:
                 username: author3zz
                 password: '123456'
                 email: nasdrz@eadszple.com
