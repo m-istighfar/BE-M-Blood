@@ -363,7 +363,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Task'
+              type: object
+            example:
+              title: Update New Task
+              description: Description of the task
+              priority: medium
+              dueDate: '2023-12-01'
       parameters:
         - name: id
           in: path
@@ -421,7 +426,7 @@ paths:
           application/json:
             schema:
               type: object
-              example: ''
+              
       security:
         - bearerAuth: []
       parameters:
@@ -475,12 +480,12 @@ paths:
         content:
           application/json:
             schema:
-                $ref: '#/components/schemas/User'
+                type: object
                 example:
-                username: author3zz
-                password: '123456'
-                email: nasdrz@eadszple.com
-                role: user
+                  username: author3zz
+                  password: '123456'
+                  email: nasdrz@eadszple.com
+                  role: user
       security:
         - bearerAuth: []
       responses:
