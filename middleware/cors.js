@@ -4,8 +4,8 @@ module.exports = (app) => {
   const allowedOrigins = [
     "http://localhost:5173",
     "https://clinquant-nougat-f52198.netlify.app",
-    "https://clinquant-nougat-f52198.netlify.app",
-    "https://clinquant-nougat-f52198.netlify.app",
+    "https://try--clinquant-nougat-f52198.netlify.app",
+    "https://candid-chaja-157afe.netlify.app",
   ];
 
   const corsOptions = {
