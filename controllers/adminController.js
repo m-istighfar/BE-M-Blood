@@ -75,7 +75,6 @@ exports.createUser = async (req, res) => {
       verified: true,
     });
 
-    // Hiding the password field in the response.
     newUser.password = undefined;
 
     res.status(201).json({ success: true, data: newUser });
@@ -103,7 +102,6 @@ exports.updateUser = async (req, res) => {
       return res.status(404).json({ success: false, error: "User not found" });
     }
 
-    // Hiding the password field in the response.
     updatedUser.password = undefined;
 
     res.status(200).json({ success: true, data: updatedUser });

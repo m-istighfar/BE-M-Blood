@@ -29,7 +29,7 @@ const getAllTasks = async (req, res) => {
       filteringOrSearching = true;
     }
 
-    let sortDirection = 1; // default to ascending
+    let sortDirection = 1;
     if (sortOrder === "desc") {
       sortDirection = -1;
     }
@@ -100,7 +100,6 @@ const updateTask = async (req, res) => {
         .status(403)
         .json({ error: "Unauthorized: This task does not belong to you" });
 
-    // Check if the task's status is completed
     if (task.status === "completed")
       return res
         .status(400)
@@ -142,20 +141,16 @@ const deleteTask = async (req, res) => {
 
 const deleteAllTasks = async (req, res) => {
   try {
-    // Get the user ID from the request object
     const userId = req.user.id;
 
-    // Remove all tasks associated with the user ID
     const result = await Task.deleteMany({ userId });
 
-    // Check the number of tasks deleted
     if (result.deletedCount === 0) {
       return res
         .status(200)
         .json({ message: "You have no tasks to delete at the moment." });
     }
 
-    // Send a success response
     res
       .status(200)
       .json({ message: `${result.deletedCount} tasks deleted successfully!` });
