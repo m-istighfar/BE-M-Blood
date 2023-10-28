@@ -18,7 +18,7 @@ async function generateFakeData() {
     const numFakeUsers = 20;
     const users = await generateFakeUsers(numFakeUsers);
 
-    const tasksPerUser = 9;
+    const tasksPerUser = 100;
     const taskPromises = users.map(() =>
       generateFakeTasks(tasksPerUser, users)
     );

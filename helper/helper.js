@@ -6,10 +6,10 @@ const Task = require("../models/Task");
 
 async function generateFakeUsers(count) {
   const fakeUsers = [];
-  const defaultPassword = "12345678"; // Set default password
+  const defaultPassword = "12345678";
 
   for (let i = 0; i < count; i++) {
-    const hashedPassword = await bcrypt.hash(defaultPassword, 10); // Hash the default password
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
     const fakeUser = {
       username: faker.internet.userName(),
@@ -32,15 +32,42 @@ async function generateFakeUsers(count) {
   }
 }
 
+function getStartAndEndOfWeek(date) {
+  const startOfWeek = new Date(date);
+  startOfWeek.setDate(date.getDate() - date.getDay() + 1);
+
+  const endOfWeek = new Date(date);
+  endOfWeek.setDate(date.getDate() - date.getDay() + 7);
+
+  return { startOfWeek, endOfWeek };
+}
+
+function randomDate(start, end) {
+  return new Date(
+    start.getTime() + Math.random() * (end.getTime() - start.getTime())
+  );
+}
+
 async function generateFakeTasks(count, users) {
   const fakeTasks = [];
+  const { startOfWeek, endOfWeek } = getStartAndEndOfWeek(new Date());
 
   for (let i = 0; i < count; i++) {
+    let dueDate;
+
+    if (i % 10 === 0) {
+      dueDate = new Date();
+    } else if (i % 5 === 0) {
+      dueDate = randomDate(startOfWeek, endOfWeek);
+    } else {
+      dueDate = faker.date.future();
+    }
+
     const fakeTask = {
       title: faker.lorem.words(),
       description: faker.lorem.paragraph(),
       priority: faker.random.arrayElement(["high", "medium", "low"]),
-      dueDate: faker.date.future(),
+      dueDate: dueDate,
       userId: faker.random.arrayElement(users)._id,
     };
     fakeTasks.push(fakeTask);
