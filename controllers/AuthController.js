@@ -14,7 +14,11 @@ const {
 } = require("../config/jwt");
 
 const successResponse = (res, message, data = null) => {
-  return res.status(200).json({ message, data });
+  const response = { message };
+  if (data !== null) {
+    response.data = data;
+  }
+  return res.status(200).json(response);
 };
 
 const errorResponse = (res, message, statusCode = 400) => {
