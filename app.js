@@ -18,6 +18,7 @@ const errorFormatter = require("./middleware/errorFormatter");
 const applyMiddleware = require("./middleware/index");
 
 const authRoutes = require("./routes/authRoutes");
+const appointmentRoutes = require("./routes/appointmentRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 
@@ -40,6 +41,12 @@ applyMiddleware(app);
 // app.use(databaseMiddleware);
 
 app.use("/auth", authRoutes);
+app.use(
+  "/appointments",
+  authMiddleware,
+  authorizationMiddleware(["user"]),
+  appointmentRoutes
+);
 // app.use(
 //   "/admin",
 //   authMiddleware,

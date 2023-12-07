@@ -1,19 +1,22 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+require("dotenv").config();
 
-const {onRequest} = require("firebase-functions/v2/https");
-const logger = require("firebase-functions/logger");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+const express = require("express");
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+const authMiddleware = require("./middleware/authenticationMiddleware");
+const authorizationMiddleware = require("./middleware/authorizationMiddleware");
+const applyMiddleware = require("./middleware/index");
+
+const authRoutes = require("./routes/authRoutes");
+
+const app = express();
+applyMiddleware(app);
+
+app.use("/auth", authRoutes);
+
+app.use("/user", authMiddleware, authorizationMiddleware(["user"]), userRoutes);
+
+const PORT = process.env.PORT;
+app.listen(PORT, () => console.log(`Listening on port ${PORT}...`));
