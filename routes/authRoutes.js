@@ -30,16 +30,15 @@ router.post("/login", userLoginLimiter, AuthController.login);
 
 router.post("/register", AuthController.register);
 router.get("/verify-email/:token", AuthController.verifyEmail);
-router.post("/refreshToken", AuthController.refreshTokenHandler);
 
-router.post(
-  "/request-password-reset",
-  PasswordResetController.requestPasswordReset
-);
+// router.post(
+//   "/request-password-reset",
+//   PasswordResetController.requestPasswordReset
+// );
 
-router.post(
-  "/reset-password/:resetToken",
-  PasswordResetController.resetPassword
-);
+// router.post(
+//   "/reset-password/:resetToken",
+//   PasswordResetController.resetPassword
+// );
 
 module.exports = router;

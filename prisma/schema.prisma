@@ -1,0 +1,121 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model BloodType {
+  BloodTypeID       Int                @id @default(autoincrement())
+  Type              String             @unique
+  Appointments      Appointment[]
+  EmergencyRequests EmergencyRequest[]
+  BloodInventories  BloodInventory[]
+}
+
+model UserAuth {
+  UserAuthID            Int       @id @default(autoincrement())
+  Username              String    @unique
+  Email                 String    @unique
+  Password              String
+  Role                  UserRole
+  ResetPasswordToken    String?   @unique
+  ResetPasswordExpires  DateTime?
+  Verified              Boolean   @default(false)
+  VerificationToken     String?   @unique
+  User                  User?     @relation(fields: [UserID], references: [UserID])
+  UserID                Int?      @unique
+  CreatedAt             DateTime  @default(now())
+  UpdatedAt             DateTime  @updatedAt
+}
+
+model User {
+  UserID          Int            @id @default(autoincrement())
+  ProvinceID      Int
+  Province        Province       @relation(fields: [ProvinceID], references: [ProvinceID])
+  Name            String
+  Phone           String
+  AdditionalInfo  String?
+  Appointments    Appointment[]
+  EmergencyRequests EmergencyRequest[]
+  HelpOffers      HelpOffer[]
+  BloodDrives     BloodDrive[]
+  UserAuth        UserAuth?
+  CreatedAt       DateTime       @default(now())
+  UpdatedAt       DateTime       @updatedAt
+}
+
+model Province {
+  ProvinceID      Int          @id @default(autoincrement())
+  Name            String
+  Capital         String
+  Users           User[]
+  BloodDrives     BloodDrive[]
+  BloodInventories BloodInventory[]
+  CreatedAt       DateTime     @default(now())
+  UpdatedAt       DateTime     @updatedAt
+}
+
+model Appointment {
+  AppointmentID   Int           @id @default(autoincrement())
+  UserID          Int
+  User            User          @relation(fields: [UserID], references: [UserID])
+  BloodTypeID     Int
+  BloodType       BloodType     @relation(fields: [BloodTypeID], references: [BloodTypeID])
+  ScheduledDate   DateTime
+  CreatedAt       DateTime      @default(now())
+  UpdatedAt       DateTime      @updatedAt
+}
+
+model EmergencyRequest {
+  RequestID       Int           @id @default(autoincrement())
+  UserID          Int
+  User            User          @relation(fields: [UserID], references: [UserID])
+  BloodTypeID     Int
+  BloodType       BloodType     @relation(fields: [BloodTypeID], references: [BloodTypeID])
+  RequestDate     DateTime
+  CreatedAt       DateTime      @default(now())
+  UpdatedAt       DateTime      @updatedAt
+}
+
+model HelpOffer {
+  OfferID         Int           @id @default(autoincrement())
+  UserID          Int
+  User            User          @relation(fields: [UserID], references: [UserID])
+  Reason          String
+  Availability    String
+  CreatedAt       DateTime      @default(now())
+  UpdatedAt       DateTime      @updatedAt
+}
+
+model BloodDrive {
+  DriveID         Int           @id @default(autoincrement())
+  UserID          Int
+  User            User          @relation(fields: [UserID], references: [UserID])
+  Institute       String
+  ProvinceID      Int
+  Province        Province      @relation(fields: [ProvinceID], references: [ProvinceID])
+  Designation     String
+  ScheduledDate   DateTime
+  CreatedAt       DateTime      @default(now())
+  UpdatedAt       DateTime      @updatedAt
+}
+
+model BloodInventory {
+  InventoryID     Int           @id @default(autoincrement())
+  BloodTypeID     Int
+  BloodType       BloodType     @relation(fields: [BloodTypeID], references: [BloodTypeID])
+  Quantity        Int
+  ExpiryDate      DateTime
+  ProvinceID      Int
+  Province        Province      @relation(fields: [ProvinceID], references: [ProvinceID])
+  CreatedAt       DateTime      @default(now())
+  UpdatedAt       DateTime      @updatedAt
+}
+
+enum UserRole {
+  admin
+  user
+}

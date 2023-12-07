@@ -1,5 +1,8 @@
 require("dotenv").config();
 
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
+
 const express = require("express");
 
 const cookieParser = require("cookie-parser");
@@ -9,7 +12,6 @@ const yaml = require("yaml");
 const fs = require("fs");
 const OpenApiValidator = require("express-openapi-validator");
 
-const databaseMiddleware = require("./middleware/databaseMiddleware");
 const authMiddleware = require("./middleware/authenticationMiddleware");
 const authorizationMiddleware = require("./middleware/authorizationMiddleware");
 const errorFormatter = require("./middleware/errorFormatter");
@@ -35,17 +37,17 @@ app.use(
   })
 );
 
-app.use(databaseMiddleware);
+// app.use(databaseMiddleware);
 
 app.use("/auth", authRoutes);
-app.use(
-  "/admin",
-  authMiddleware,
-  authorizationMiddleware(["admin"]),
-  adminRoutes
-);
+// app.use(
+//   "/admin",
+//   authMiddleware,
+//   authorizationMiddleware(["admin"]),
+//   adminRoutes
+// );
 
-app.use("/user", authMiddleware, authorizationMiddleware(["user"]), userRoutes);
+// app.use("/user", authMiddleware, authorizationMiddleware(["user"]), userRoutes);
 
 app.use(errorFormatter);
 

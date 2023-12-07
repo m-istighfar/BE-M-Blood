@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^5.7.0",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "cookie-parser": "^1.4.6",
@@ -35,6 +36,7 @@
     "nodemailer-smtp-transport": "^2.7.4",
     "passport": "^0.6.0",
     "passport-google-oauth20": "^2.0.0",
+    "requests": "^0.3.0",
     "rotating-file-stream": "^3.1.1",
     "swagger-ui-express": "^5.0.0",
     "yaml": "^2.3.2"

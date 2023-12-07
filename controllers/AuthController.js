@@ -1,10 +1,9 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-const cache = require("memory-cache");
-
 const crypto = require("crypto");
 require("dotenv").config();
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 const { sendVerificationEmail } = require("../services/mailService");
 
 const {
@@ -15,31 +14,54 @@ const {
 } = require("../config/jwt");
 
 const register = async (req, res) => {
-  const { username, email, password, role } = req.body;
+  const { username, email, password, name, phone, provinceId, additionalInfo } =
+    req.body;
 
-  const existingUser = await User.findOne({ username });
-  if (existingUser)
-    return res.status(400).json({ error: "User already exists" });
+  const existingUserAuthByUsername = await prisma.userAuth.findUnique({
+    where: { Username: username },
+  });
+  if (existingUserAuthByUsername) {
+    return res.status(400).json({ error: "Username already exists" });
+  }
+
+  const existingUserAuthByEmail = await prisma.userAuth.findUnique({
+    where: { Email: email },
+  });
+  if (existingUserAuthByEmail) {
+    return res.status(400).json({ error: "Email already exists" });
+  }
 
   try {
     const verificationToken = crypto.randomBytes(32).toString("hex");
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = new User({
-      username,
-      email,
-      password: hashedPassword,
-      role,
-      verificationToken,
+    const newUserAuth = await prisma.userAuth.create({
+      data: {
+        Username: username,
+        Email: email,
+        Password: hashedPassword,
+        VerificationToken: verificationToken,
+        Role: "user", // default role
+      },
     });
 
-    await newUser.save();
+    const newUser = await prisma.user.create({
+      data: {
+        Name: name,
+        Phone: phone,
+        ProvinceID: parseInt(provinceId),
+        AdditionalInfo: additionalInfo,
+        UserAuth: {
+          connect: { UserAuthID: newUserAuth.UserAuthID },
+        },
+      },
+    });
 
     await sendVerificationEmail(email, verificationToken);
 
     res.status(200).json({
       message: "User successfully registered",
-      data: newUser,
+      data: { userId: newUser.UserID, username, email },
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -49,14 +71,17 @@ const register = async (req, res) => {
 const verifyEmail = async (req, res) => {
   const { token } = req.params;
 
-  const user = await User.findOne({ verificationToken: token });
-  if (!user) {
+  const userAuth = await prisma.userAuth.findUnique({
+    where: { VerificationToken: token },
+  });
+  if (!userAuth) {
     return res.status(400).json({ error: "Invalid verification token." });
   }
 
-  user.verified = true;
-  user.verificationToken = undefined;
-  await user.save();
+  await prisma.userAuth.update({
+    where: { UserAuthID: userAuth.UserAuthID },
+    data: { Verified: true, VerificationToken: null },
+  });
 
   res.status(200).json({ message: "Email verified successfully!" });
 };
@@ -65,26 +90,27 @@ const login = async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    const existingUser = await User.findOne({ username });
-    if (!existingUser)
+    const userAuth = await prisma.userAuth.findUnique({
+      where: { Username: username },
+    });
+    if (!userAuth) {
       return res.status(400).json({ error: "User does not exist" });
+    }
 
-    if (!existingUser.verified)
-      return res.status(400).json({
-        error: "Email not verified. Please verify your email first.",
-      });
+    if (!userAuth.Verified) {
+      return res
+        .status(400)
+        .json({ error: "Email not verified. Please verify your email first." });
+    }
 
-    const isPasswordCorrect = await bcrypt.compare(
-      password,
-      existingUser.password
-    );
+    const isPasswordCorrect = await bcrypt.compare(password, userAuth.Password);
 
     if (isPasswordCorrect) {
       const accessToken = jwt.sign(
         {
-          username: existingUser.username,
-          id: existingUser._id,
-          role: existingUser.role,
+          username: userAuth.Username,
+          id: userAuth.UserAuthID,
+          role: userAuth.Role,
         },
         JWT_SIGN,
         { expiresIn: ACCESS_TOKEN_EXPIRATION }
@@ -92,9 +118,9 @@ const login = async (req, res) => {
 
       const refreshToken = jwt.sign(
         {
-          username: existingUser.username,
-          id: existingUser._id,
-          role: existingUser.role,
+          username: userAuth.Username,
+          id: userAuth.UserAuthID,
+          role: userAuth.Role,
         },
         JWT_REFRESH_SIGN,
         { expiresIn: REFRESH_TOKEN_EXPIRATION }
@@ -102,12 +128,12 @@ const login = async (req, res) => {
 
       res.status(200).json({
         message: "Login successful",
-        userId: existingUser._id,
+        userId: userAuth.UserAuthID,
         accessToken,
         refreshToken,
         accessTokenExp: ACCESS_TOKEN_EXPIRATION,
         refreshTokenExp: REFRESH_TOKEN_EXPIRATION,
-        role: existingUser.role,
+        role: userAuth.Role,
       });
     } else {
       res.status(400).json({ error: "Password is incorrect" });
@@ -117,50 +143,8 @@ const login = async (req, res) => {
   }
 };
 
-const refreshTokenHandler = async (req, res) => {
-  const { refreshToken } = req.body;
-
-  if (!refreshToken) {
-    return res.status(403).json({ error: "Refresh token not provided" });
-  }
-
-  if (cache.get(`blacklist_refreshToken_${refreshToken}`)) {
-    return res.status(403).json({ error: "Refresh token is blacklisted" });
-  }
-
-  let decodedToken;
-  try {
-    decodedToken = jwt.verify(refreshToken, JWT_REFRESH_SIGN);
-  } catch (err) {
-    return res.status(403).json({ error: "Invalid refresh token" });
-  }
-
-  const user = await User.findById(decodedToken.id);
-
-  if (!user) {
-    return res.status(404).json({ error: "User not found" });
-  }
-
-  const accessToken = jwt.sign(
-    { username: user.username, id: user._id, role: user.role },
-    JWT_SIGN,
-    { expiresIn: ACCESS_TOKEN_EXPIRATION }
-  );
-
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    maxAge: 60 * 60 * 1000,
-  });
-
-  res.status(200).json({
-    accessToken: accessToken,
-    accessTokenExp: ACCESS_TOKEN_EXPIRATION,
-  });
-};
-
 module.exports = {
   register,
   verifyEmail,
   login,
-  refreshTokenHandler,
 };
