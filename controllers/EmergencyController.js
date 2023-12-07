@@ -13,21 +13,6 @@ exports.createEmergencyRequest = async (req, res) => {
       return res.status(400).json({ error: "Invalid blood type" });
     }
 
-    const inventory = await prisma.bloodInventory.findFirst({
-      where: {
-        BloodTypeID: bloodTypeRecord.BloodTypeID,
-        Quantity: {
-          gt: 0,
-        },
-      },
-    });
-
-    if (!inventory) {
-      return res
-        .status(404)
-        .json({ error: "Requested blood type currently unavailable" });
-    }
-
     const userWithProvince = await prisma.user.findUnique({
       where: { UserID: userId },
       include: { Province: true },
@@ -39,13 +24,26 @@ exports.createEmergencyRequest = async (req, res) => {
         .json({ error: "User's province information is missing" });
     }
 
+    const inventory = await prisma.bloodInventory.findFirst({
+      where: {
+        BloodTypeID: bloodTypeRecord.BloodTypeID,
+        Quantity: { gt: 0 },
+        ProvinceID: userWithProvince.Province.ProvinceID,
+      },
+    });
+
+    if (!inventory) {
+      return res.status(404).json({
+        error: "Requested blood type currently unavailable in your area",
+      });
+    }
     const newEmergencyRequest = await prisma.emergencyRequest.create({
       data: {
         UserID: userId,
         BloodTypeID: bloodTypeRecord.BloodTypeID,
         RequestDate: new Date(),
         AdditionalInfo: additionalInfo,
-        Location: userWithProvince.Province.Capital, // Set location
+        Location: userWithProvince.Province.Capital,
       },
     });
 
