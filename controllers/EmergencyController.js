@@ -28,12 +28,24 @@ exports.createEmergencyRequest = async (req, res) => {
         .json({ error: "Requested blood type currently unavailable" });
     }
 
+    const userWithProvince = await prisma.user.findUnique({
+      where: { UserID: userId },
+      include: { Province: true },
+    });
+
+    if (!userWithProvince?.Province) {
+      return res
+        .status(400)
+        .json({ error: "User's province information is missing" });
+    }
+
     const newEmergencyRequest = await prisma.emergencyRequest.create({
       data: {
         UserID: userId,
         BloodTypeID: bloodTypeRecord.BloodTypeID,
         RequestDate: new Date(),
         AdditionalInfo: additionalInfo,
+        Location: userWithProvince.Province.Capital, // Set location
       },
     });
 
