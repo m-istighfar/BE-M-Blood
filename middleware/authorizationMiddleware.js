@@ -3,17 +3,13 @@ const { JWT_SIGN } = require("../config/jwt.js");
 
 const authorizationMiddleware = (allowedRoles) => {
   return (req, res, next) => {
-    let token;
+    const authHeader = req.headers.authorization;
 
-    if (req.cookies.accessToken) {
-      token = req.cookies.accessToken;
-    } else if (req.headers.authorization) {
-      token = req.headers.authorization.split(" ")[1];
-    }
-
-    if (!token) {
+    if (!authHeader) {
       return res.status(401).json({ error: "Unauthorized" });
     }
+
+    const token = authHeader.split(" ")[1];
 
     try {
       const decodedToken = jwt.verify(token, JWT_SIGN);
