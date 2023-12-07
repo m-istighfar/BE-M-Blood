@@ -19,6 +19,7 @@ const applyMiddleware = require("./middleware/index");
 
 const authRoutes = require("./routes/authRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
+const emergencyRoutes
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 

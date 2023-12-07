@@ -10,6 +10,19 @@ exports.createAppointment = async (req, res) => {
       return res.status(400).json({ error: "Invalid or past scheduled date" });
     }
 
+    const userWithProvince = await prisma.user.findUnique({
+      where: { UserID: userId },
+      include: {
+        Province: true,
+      },
+    });
+
+    if (!userWithProvince || !userWithProvince.Province) {
+      return res
+        .status(400)
+        .json({ error: "User's province information is missing" });
+    }
+
     const bloodTypeRecord = await prisma.bloodType.findFirst({
       where: { Type: bloodType },
     });
@@ -37,6 +50,7 @@ exports.createAppointment = async (req, res) => {
         UserID: userId,
         BloodTypeID: bloodTypeRecord.BloodTypeID,
         ScheduledDate: new Date(scheduledDate),
+        Location: userWithProvince.Province.Capital,
       },
     });
 

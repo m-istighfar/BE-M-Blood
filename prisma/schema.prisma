@@ -65,6 +65,7 @@ model Appointment {
   BloodTypeID     Int
   BloodType       BloodType     @relation(fields: [BloodTypeID], references: [BloodTypeID])
   ScheduledDate   DateTime
+  Location        String? 
   CreatedAt       DateTime      @default(now())
   UpdatedAt       DateTime      @updatedAt
 }
