@@ -83,14 +83,16 @@ model EmergencyRequest {
 }
 
 model HelpOffer {
-  OfferID         Int           @id @default(autoincrement())
-  UserID          Int
-  User            User          @relation(fields: [UserID], references: [UserID])
-  Reason          String
-  Availability    String
-  CreatedAt       DateTime      @default(now())
-  UpdatedAt       DateTime      @updatedAt
+  OfferID           Int       @id @default(autoincrement())
+  UserID            Int
+  User              User      @relation(fields: [UserID], references: [UserID])
+  IsWillingToDonate Boolean   @default(false)
+  CanHelpInEmergency Boolean  @default(false)
+  Reason            String?   
+  CreatedAt         DateTime  @default(now())
+  UpdatedAt         DateTime  @updatedAt
 }
+
 
 model BloodDrive {
   DriveID         Int           @id @default(autoincrement())
