@@ -1,379 +1,379 @@
-openapi: 3.0.0
-info:
-  title: TaskManagement Copy
-  version: 1.0.0
-servers:
-  - url: http://localhost:3000
-components:
-  securitySchemes:
-    noauthAuth:
-      type: http
-      scheme: noauth
-    bearerAuth:
-      type: http
-      scheme: bearer
-tags:
-  - name: auth
-  - name: user
-  - name: admin
-paths:
-  /auth/register:
-    post:
-      tags:
-        - auth
-      summary: Register
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              example:
-                username: tifar2
-                password: '123456'
-                email: m.istighfaramalz@gmail.com
-                role: user
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /auth/verify-email/{token}:
-    get:
-      tags:
-        - auth
-      summary: Verify Email
-      security:
-        - noauthAuth: []
-      parameters:
-        - name: token
-          in: path
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /auth/login:
-    post:
-      tags:
-        - auth
-      summary: Login
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              example:
-                username: tifar2
-                password: '123456'
-      security:
-        - noauthAuth: []
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /auth/refreshToken:
-    post:
-      tags:
-        - auth
-      summary: Refresh Acess Token
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              example:
-                refreshToken: >-
-                  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiaWQiOiI2NTI4MTQ3NjM3YjljNDYyMjJlZjZkZDciLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE2OTcxMjkyNDMsImV4cCI6MTY5NzczNDA0M30.YiyW9nuY4XCxLr3UNVfr3yzs4qszKPoAW7giQaOWk8I
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /auth/request-password-reset:
-    post:
-      tags:
-        - auth
-      summary: Request Reset Password
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              example:
-                email: m.istighfaramal@gmail.com
-      security:
-        - noauthAuth: []
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /auth/reset-password/{resetToken}:
-    post:
-      tags:
-        - auth
-      summary: Create New Password
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              example:
-                newPassword: '1234567'
-      security:
-        - noauthAuth: []
-      parameters:
-        - name: resetToken
-          in: path
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /user/tasks:
-    get:
-      tags:
-        - user
-      summary: Get All Tasks
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: sortOrder
-          in: query
-          required: false
-          description: The sort order of the tasks
-          schema:
-            type: string
-            enum:
-              - asc
-              - desc
-        - name: priority
-          in: query
-          required: false
-          description: The priority of the tasks
-          schema:
-            type: string
-            enum:
-              - high
-              - medium
-              - low
-        - name: status
-          in: query
-          required: false
-          description: The status of the tasks
-          schema:
-            type: string
-            enum:
-              - pending
-              - completed
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-    post:
-      tags:
-        - user
-      summary: Create a New Task
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              example:
-                title: New Task
-                description: Description of the task
-                priority: medium
-                dueDate: '2023-12-01'
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-    delete:
-      tags:
-        - user
-      summary: Delete a Task All
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /user/tasks/{id}:
-    get:
-      tags:
-        - user
-      summary: Get Task by ID
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-    put:
-      tags:
-        - user
-      summary: Update a Task
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              example:
-                title: Update New Task
-                description: Description of the task
-                priority: medium
-                dueDate: '2023-12-01'
-                status: completed
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-    delete:
-      tags:
-        - user
-      summary: Delete a Task
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /user/tasks/{id}/complete:
-    patch:
-      tags:
-        - user
-      summary: Mark Task as Complete
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              example: ''
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /admin/list-user:
-    get:
-      tags:
-        - admin
-      summary: Get All User
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /admin/create-user:
-    post:
-      tags:
-        - admin
-      summary: Create User
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              example:
-                username: author3zz
-                password: '123456'
-                email: nasdrz@eadszple.com
-                role: user
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /admin/update-user/{id}:
-    put:
-      tags:
-        - admin
-      summary: Update User
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              example:
-                username: adsz
-                email: das@esadsda.com
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /admin/delete-user/{id}:
-    delete:
-      tags:
-        - admin
-      summary: Delete User
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
+# openapi: 3.0.0
+# info:
+#   title: TaskManagement Copy
+#   version: 1.0.0
+# servers:
+#   - url: http://localhost:3000
+# components:
+#   securitySchemes:
+#     noauthAuth:
+#       type: http
+#       scheme: noauth
+#     bearerAuth:
+#       type: http
+#       scheme: bearer
+# tags:
+#   - name: auth
+#   - name: user
+#   - name: admin
+# paths:
+#   /auth/register:
+#     post:
+#       tags:
+#         - auth
+#       summary: Register
+#       requestBody:
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               example:
+#                 username: tifar2
+#                 password: '123456'
+#                 email: m.istighfaramalz@gmail.com
+#                 role: user
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#   /auth/verify-email/{token}:
+#     get:
+#       tags:
+#         - auth
+#       summary: Verify Email
+#       security:
+#         - noauthAuth: []
+#       parameters:
+#         - name: token
+#           in: path
+#           schema:
+#             type: string
+#           required: true
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#   /auth/login:
+#     post:
+#       tags:
+#         - auth
+#       summary: Login
+#       requestBody:
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               example:
+#                 username: tifar2
+#                 password: '123456'
+#       security:
+#         - noauthAuth: []
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#   /auth/refreshToken:
+#     post:
+#       tags:
+#         - auth
+#       summary: Refresh Acess Token
+#       requestBody:
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               example:
+#                 refreshToken: >-
+#                   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiaWQiOiI2NTI4MTQ3NjM3YjljNDYyMjJlZjZkZDciLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE2OTcxMjkyNDMsImV4cCI6MTY5NzczNDA0M30.YiyW9nuY4XCxLr3UNVfr3yzs4qszKPoAW7giQaOWk8I
+#       security:
+#         - bearerAuth: []
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#   /auth/request-password-reset:
+#     post:
+#       tags:
+#         - auth
+#       summary: Request Reset Password
+#       requestBody:
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               example:
+#                 email: m.istighfaramal@gmail.com
+#       security:
+#         - noauthAuth: []
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#   /auth/reset-password/{resetToken}:
+#     post:
+#       tags:
+#         - auth
+#       summary: Create New Password
+#       requestBody:
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               example:
+#                 newPassword: '1234567'
+#       security:
+#         - noauthAuth: []
+#       parameters:
+#         - name: resetToken
+#           in: path
+#           schema:
+#             type: string
+#           required: true
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#   /user/tasks:
+#     get:
+#       tags:
+#         - user
+#       summary: Get All Tasks
+#       security:
+#         - bearerAuth: []
+#       parameters:
+#         - name: sortOrder
+#           in: query
+#           required: false
+#           description: The sort order of the tasks
+#           schema:
+#             type: string
+#             enum:
+#               - asc
+#               - desc
+#         - name: priority
+#           in: query
+#           required: false
+#           description: The priority of the tasks
+#           schema:
+#             type: string
+#             enum:
+#               - high
+#               - medium
+#               - low
+#         - name: status
+#           in: query
+#           required: false
+#           description: The status of the tasks
+#           schema:
+#             type: string
+#             enum:
+#               - pending
+#               - completed
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#     post:
+#       tags:
+#         - user
+#       summary: Create a New Task
+#       requestBody:
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               example:
+#                 title: New Task
+#                 description: Description of the task
+#                 priority: medium
+#                 dueDate: '2023-12-01'
+#       security:
+#         - bearerAuth: []
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#     delete:
+#       tags:
+#         - user
+#       summary: Delete a Task All
+#       security:
+#         - bearerAuth: []
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#   /user/tasks/{id}:
+#     get:
+#       tags:
+#         - user
+#       summary: Get Task by ID
+#       security:
+#         - bearerAuth: []
+#       parameters:
+#         - name: id
+#           in: path
+#           schema:
+#             type: string
+#           required: true
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#     put:
+#       tags:
+#         - user
+#       summary: Update a Task
+#       requestBody:
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               example:
+#                 title: Update New Task
+#                 description: Description of the task
+#                 priority: medium
+#                 dueDate: '2023-12-01'
+#                 status: completed
+#       security:
+#         - bearerAuth: []
+#       parameters:
+#         - name: id
+#           in: path
+#           schema:
+#             type: string
+#           required: true
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#     delete:
+#       tags:
+#         - user
+#       summary: Delete a Task
+#       security:
+#         - bearerAuth: []
+#       parameters:
+#         - name: id
+#           in: path
+#           schema:
+#             type: string
+#           required: true
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#   /user/tasks/{id}/complete:
+#     patch:
+#       tags:
+#         - user
+#       summary: Mark Task as Complete
+#       requestBody:
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               example: ''
+#       security:
+#         - bearerAuth: []
+#       parameters:
+#         - name: id
+#           in: path
+#           schema:
+#             type: string
+#           required: true
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#   /admin/list-user:
+#     get:
+#       tags:
+#         - admin
+#       summary: Get All User
+#       security:
+#         - bearerAuth: []
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#   /admin/create-user:
+#     post:
+#       tags:
+#         - admin
+#       summary: Create User
+#       requestBody:
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               example:
+#                 username: author3zz
+#                 password: '123456'
+#                 email: nasdrz@eadszple.com
+#                 role: user
+#       security:
+#         - bearerAuth: []
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#   /admin/update-user/{id}:
+#     put:
+#       tags:
+#         - admin
+#       summary: Update User
+#       requestBody:
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               example:
+#                 username: adsz
+#                 email: das@esadsda.com
+#       security:
+#         - bearerAuth: []
+#       parameters:
+#         - name: id
+#           in: path
+#           schema:
+#             type: string
+#           required: true
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}
+#   /admin/delete-user/{id}:
+#     delete:
+#       tags:
+#         - admin
+#       summary: Delete User
+#       security:
+#         - bearerAuth: []
+#       parameters:
+#         - name: id
+#           in: path
+#           schema:
+#             type: string
+#           required: true
+#       responses:
+#         '200':
+#           description: Successful response
+#           content:
+#             application/json: {}

@@ -31,6 +31,14 @@ const register = async (req, res) => {
     return res.status(400).json({ error: "Email already exists" });
   }
 
+  const provinceExists = await prisma.province.findUnique({
+    where: { ProvinceID: parseInt(provinceId) },
+  });
+
+  if (!provinceExists) {
+    return res.status(400).json({ error: "Invalid ProvinceID" });
+  }
+
   try {
     const verificationToken = crypto.randomBytes(32).toString("hex");
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -41,15 +49,15 @@ const register = async (req, res) => {
         Email: email,
         Password: hashedPassword,
         VerificationToken: verificationToken,
-        Role: "user", // default role
+        Role: role || "user", // default role
       },
     });
 
     const newUser = await prisma.user.create({
       data: {
+        ProvinceID: parseInt(provinceId),
         Name: name,
         Phone: phone,
-        ProvinceID: parseInt(provinceId),
         AdditionalInfo: additionalInfo,
         UserAuth: {
           connect: { UserAuthID: newUserAuth.UserAuthID },

@@ -1,559 +1,559 @@
-openapi: 3.0.0
-info:
-  title: Task Geass API
-  version: 1.0.0
-servers:
-  - url: http://localhost:3000
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-  schemas:
-    User:
-      type: object
-      properties:
-        username:
-          type: string
-          minLength: 6
-          pattern: "^[^\\s]+$"
-        password:
-          type: string
-          format: password
-          minLength: 8
-        email:
-          type: string
-          format: email
-        role:
-          type: string
-          enum: [user, admin]
-        resetPasswordToken:
-          type: string
-        resetPasswordExpires:
-          type: string
-          format: date-time
-        verified:
-          type: boolean
-          default: false
-        verificationToken:
-          type: string
+# openapi: 3.0.0
+# info:
+#   title: Task Geass API
+#   version: 1.0.0
+# servers:
+#   - url: http://localhost:3000
+# components:
+#   securitySchemes:
+#     bearerAuth:
+#       type: http
+#       scheme: bearer
+#   schemas:
+#     User:
+#       type: object
+#       properties:
+#         username:
+#           type: string
+#           minLength: 6
+#           pattern: "^[^\\s]+$"
+#         password:
+#           type: string
+#           format: password
+#           minLength: 8
+#         email:
+#           type: string
+#           format: email
+#         role:
+#           type: string
+#           enum: [user, admin]
+#         resetPasswordToken:
+#           type: string
+#         resetPasswordExpires:
+#           type: string
+#           format: date-time
+#         verified:
+#           type: boolean
+#           default: false
+#         verificationToken:
+#           type: string
         
-    Task:
-      type: object
-      properties:
-        title:
-          type: string
-        description:
-          type: string
-        priority:
-          type: string
-          enum: [low, medium, high]
-        dueDate:
-          type: string
+#     Task:
+#       type: object
+#       properties:
+#         title:
+#           type: string
+#         description:
+#           type: string
+#         priority:
+#           type: string
+#           enum: [low, medium, high]
+#         dueDate:
+#           type: string
        
-        status:
-          type: string
-          enum: [pending, completed]
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-        userId:
-          type: string
-tags:
-  - name: auth
-    description: Operations related to authentication and user management
-  - name: user
-    description: Operations that a regular user can perform
-  - name: admin
-    description: Operations that an admin user can perform
-paths:
-  /auth/register:
-    post:
-      tags:
-        - auth
-      summary: Register a new user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-            example:
-              username: tifar2
-              password: '123456'
-              email: m.istighfaramalz@gmail.com
-              role: user
-      responses:
-        '200':
-          description: User registered successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          description: Bad request
-        '500':
-          description: Internal server error
-  /auth/verify-email/{token}:
-    get:
-      tags:
-        - auth
-      summary: Verify Email
-      parameters:
-        - name: token
-          in: path
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: Email verified successfully
-          content:
-            application/json:
-              schema: {}
-        '400':
-          description: Invalid token
-        '500':
-          description: Internal server error
-  /auth/login:
-    post:
-      tags:
-        - auth
-      summary: Login
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-            example:
-              username: tifar2
-              password: '123456'
-      responses:
-        '200':
-          description: Login successful
-          content:
-            application/json:
-              schema: {}
-        '400':
-          description: Invalid credentials
-        '500':
-          description: Internal server error
-  /auth/refreshToken:
-    post:
-      tags:
-        - auth
-      summary: Refresh Access Token
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                refreshToken:
-                  type: string
-              required:
-                - refreshToken
-            example:
-              refreshToken: 'your-refresh-token'
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Token refreshed successfully
-          content:
-            application/json:
-              schema: {}
-        '401':
-          description: Unauthorized
-        '500':
-          description: Internal server error
-  /auth/request-password-reset:
-    post:
-      tags:
-        - auth
-      summary: Request Reset Password
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  format: email
-              required:
-                - email
-            example:
-              email: m.istighfaramal@gmail.com
-      responses:
-        '200':
-          description: Password reset email sent
-        '400':
-          description: Invalid email
-        '500':
-          description: Internal server error
-  /auth/reset-password/{resetToken}:
-    post:
-      tags:
-        - auth
-      summary: Create New Password
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                newPassword:
-                  type: string
-                  format: password
-              required:
-                - newPassword
-            example:
-              newPassword: '1234567'
-      parameters:
-        - name: resetToken
-          in: path
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: Password reset successfully
-        '400':
-          description: Invalid token or password
-        '500':
-          description: Internal server error
-  /user/tasks:
-    get:
-      tags:
-        - user
-      summary: Get All Tasks
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: sortOrder
-          in: query
-          required: false
-          description: The sort order of the tasks
-          schema:
-            type: string
-            enum:
-              - asc
-              - desc
-        - name: priority
-          in: query
-          required: false
-          description: The priority of the tasks
-          schema:
-            type: string
-            enum:
-              - high
-              - medium
-              - low
-        - name: status
-          in: query
-          required: false
-          description: The status of the tasks
-          schema:
-            type: string
-            enum:
-              - pending
-              - completed
-      responses:
-        '200':
-          description: Tasks retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Task'
-        '400':
-          description: Bad Request
-        '401':
-          description: Unauthorized
-        '500':
-          description: Internal server error
+#         status:
+#           type: string
+#           enum: [pending, completed]
+#         createdAt:
+#           type: string
+#           format: date-time
+#         updatedAt:
+#           type: string
+#           format: date-time
+#         userId:
+#           type: string
+# tags:
+#   - name: auth
+#     description: Operations related to authentication and user management
+#   - name: user
+#     description: Operations that a regular user can perform
+#   - name: admin
+#     description: Operations that an admin user can perform
+# paths:
+#   /auth/register:
+#     post:
+#       tags:
+#         - auth
+#       summary: Register a new user
+#       requestBody:
+#         required: true
+#         content:
+#           application/json:
+#             schema:
+#               $ref: '#/components/schemas/User'
+#             example:
+#               username: tifar2
+#               password: '123456'
+#               email: m.istighfaramalz@gmail.com
+#               role: user
+#       responses:
+#         '200':
+#           description: User registered successfully
+#           content:
+#             application/json:
+#               schema:
+#                 $ref: '#/components/schemas/User'
+#         '400':
+#           description: Bad request
+#         '500':
+#           description: Internal server error
+#   /auth/verify-email/{token}:
+#     get:
+#       tags:
+#         - auth
+#       summary: Verify Email
+#       parameters:
+#         - name: token
+#           in: path
+#           schema:
+#             type: string
+#           required: true
+#       responses:
+#         '200':
+#           description: Email verified successfully
+#           content:
+#             application/json:
+#               schema: {}
+#         '400':
+#           description: Invalid token
+#         '500':
+#           description: Internal server error
+#   /auth/login:
+#     post:
+#       tags:
+#         - auth
+#       summary: Login
+#       requestBody:
+#         required: true
+#         content:
+#           application/json:
+#             schema:
+#               $ref: '#/components/schemas/User'
+#             example:
+#               username: tifar2
+#               password: '123456'
+#       responses:
+#         '200':
+#           description: Login successful
+#           content:
+#             application/json:
+#               schema: {}
+#         '400':
+#           description: Invalid credentials
+#         '500':
+#           description: Internal server error
+#   /auth/refreshToken:
+#     post:
+#       tags:
+#         - auth
+#       summary: Refresh Access Token
+#       requestBody:
+#         required: true
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               properties:
+#                 refreshToken:
+#                   type: string
+#               required:
+#                 - refreshToken
+#             example:
+#               refreshToken: 'your-refresh-token'
+#       security:
+#         - bearerAuth: []
+#       responses:
+#         '200':
+#           description: Token refreshed successfully
+#           content:
+#             application/json:
+#               schema: {}
+#         '401':
+#           description: Unauthorized
+#         '500':
+#           description: Internal server error
+#   /auth/request-password-reset:
+#     post:
+#       tags:
+#         - auth
+#       summary: Request Reset Password
+#       requestBody:
+#         required: true
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               properties:
+#                 email:
+#                   type: string
+#                   format: email
+#               required:
+#                 - email
+#             example:
+#               email: m.istighfaramal@gmail.com
+#       responses:
+#         '200':
+#           description: Password reset email sent
+#         '400':
+#           description: Invalid email
+#         '500':
+#           description: Internal server error
+#   /auth/reset-password/{resetToken}:
+#     post:
+#       tags:
+#         - auth
+#       summary: Create New Password
+#       requestBody:
+#         required: true
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               properties:
+#                 newPassword:
+#                   type: string
+#                   format: password
+#               required:
+#                 - newPassword
+#             example:
+#               newPassword: '1234567'
+#       parameters:
+#         - name: resetToken
+#           in: path
+#           schema:
+#             type: string
+#           required: true
+#       responses:
+#         '200':
+#           description: Password reset successfully
+#         '400':
+#           description: Invalid token or password
+#         '500':
+#           description: Internal server error
+#   /user/tasks:
+#     get:
+#       tags:
+#         - user
+#       summary: Get All Tasks
+#       security:
+#         - bearerAuth: []
+#       parameters:
+#         - name: sortOrder
+#           in: query
+#           required: false
+#           description: The sort order of the tasks
+#           schema:
+#             type: string
+#             enum:
+#               - asc
+#               - desc
+#         - name: priority
+#           in: query
+#           required: false
+#           description: The priority of the tasks
+#           schema:
+#             type: string
+#             enum:
+#               - high
+#               - medium
+#               - low
+#         - name: status
+#           in: query
+#           required: false
+#           description: The status of the tasks
+#           schema:
+#             type: string
+#             enum:
+#               - pending
+#               - completed
+#       responses:
+#         '200':
+#           description: Tasks retrieved successfully
+#           content:
+#             application/json:
+#               schema:
+#                 type: array
+#                 items:
+#                   $ref: '#/components/schemas/Task'
+#         '400':
+#           description: Bad Request
+#         '401':
+#           description: Unauthorized
+#         '500':
+#           description: Internal server error
     
-    post:
-        tags:
-          - user
-        summary: Create a New Task
-        requestBody:
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  title: New Task
-                  description: Description of the task
-                  priority: medium
-                  dueDate: '2023-12-01'
-        security:
-          - bearerAuth: []
-        responses:
-          '200':
-            description: Task created successfully
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/Task'
-          '400':
-            description: Bad request
-          '401':
-            description: Unauthorized
-          '500':
-            description: Internal server error
+#     post:
+#         tags:
+#           - user
+#         summary: Create a New Task
+#         requestBody:
+#           content:
+#             application/json:
+#               schema:
+#                 type: object
+#                 example:
+#                   title: New Task
+#                   description: Description of the task
+#                   priority: medium
+#                   dueDate: '2023-12-01'
+#         security:
+#           - bearerAuth: []
+#         responses:
+#           '200':
+#             description: Task created successfully
+#             content:
+#               application/json:
+#                 schema:
+#                   $ref: '#/components/schemas/Task'
+#           '400':
+#             description: Bad request
+#           '401':
+#             description: Unauthorized
+#           '500':
+#             description: Internal server error
 
-    delete:
-      tags:
-        - user
-      summary: Delete All Tasks
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: All tasks deleted successfully
-        '401':
-          description: Unauthorized
-        '500':
-          description: Internal server error
+#     delete:
+#       tags:
+#         - user
+#       summary: Delete All Tasks
+#       security:
+#         - bearerAuth: []
+#       responses:
+#         '200':
+#           description: All tasks deleted successfully
+#         '401':
+#           description: Unauthorized
+#         '500':
+#           description: Internal server error
 
-  /user/tasks/{id}:
-    get:
-      tags:
-        - user
-      summary: Get a Specific Task
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Task retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Task'
-        '400':
-          description: Invalid ID supplied
-        '401':
-          description: Unauthorized
-        '404':
-          description: Task not found
-        '500':
-          description: Internal server error
-    put:
-      tags:
-        - user
-      summary: Update a Specific Task
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-            example:
-              title: Update New Task
-              description: Description of the task
-              priority: medium
-              dueDate: '2023-12-01'
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Task updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Task'
-        '400':
-          description: Invalid ID supplied or bad input
-        '401':
-          description: Unauthorized
-        '404':
-          description: Task not found
-        '500':
-          description: Internal server error
-    delete:
-      tags:
-        - user
-      summary: Delete a Specific Task
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Task deleted successfully
-        '400':
-          description: Invalid ID supplied
-        '401':
-          description: Unauthorized
-        '404':
-          description: Task not found
-        '500':
-          description: Internal server error
+#   /user/tasks/{id}:
+#     get:
+#       tags:
+#         - user
+#       summary: Get a Specific Task
+#       parameters:
+#         - name: id
+#           in: path
+#           required: true
+#           schema:
+#             type: string
+#       security:
+#         - bearerAuth: []
+#       responses:
+#         '200':
+#           description: Task retrieved successfully
+#           content:
+#             application/json:
+#               schema:
+#                 $ref: '#/components/schemas/Task'
+#         '400':
+#           description: Invalid ID supplied
+#         '401':
+#           description: Unauthorized
+#         '404':
+#           description: Task not found
+#         '500':
+#           description: Internal server error
+#     put:
+#       tags:
+#         - user
+#       summary: Update a Specific Task
+#       requestBody:
+#         required: true
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#             example:
+#               title: Update New Task
+#               description: Description of the task
+#               priority: medium
+#               dueDate: '2023-12-01'
+#       parameters:
+#         - name: id
+#           in: path
+#           required: true
+#           schema:
+#             type: string
+#       security:
+#         - bearerAuth: []
+#       responses:
+#         '200':
+#           description: Task updated successfully
+#           content:
+#             application/json:
+#               schema:
+#                 $ref: '#/components/schemas/Task'
+#         '400':
+#           description: Invalid ID supplied or bad input
+#         '401':
+#           description: Unauthorized
+#         '404':
+#           description: Task not found
+#         '500':
+#           description: Internal server error
+#     delete:
+#       tags:
+#         - user
+#       summary: Delete a Specific Task
+#       parameters:
+#         - name: id
+#           in: path
+#           required: true
+#           schema:
+#             type: string
+#       security:
+#         - bearerAuth: []
+#       responses:
+#         '200':
+#           description: Task deleted successfully
+#         '400':
+#           description: Invalid ID supplied
+#         '401':
+#           description: Unauthorized
+#         '404':
+#           description: Task not found
+#         '500':
+#           description: Internal server error
 
-  /user/tasks/{id}/complete:
-    patch:
-      tags:
-        - user
-      summary: Mark Task as Complete
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
+#   /user/tasks/{id}/complete:
+#     patch:
+#       tags:
+#         - user
+#       summary: Mark Task as Complete
+#       requestBody:
+#         content:
+#           application/json:
+#             schema:
+#               type: object
               
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description : Task completed successfully
-          content: 
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Task'
-        '401': 
-          description: Unauthorized
-        '404':
-          description: Task not found
-        '500':
-          description: Internal server error
+#       security:
+#         - bearerAuth: []
+#       parameters:
+#         - name: id
+#           in: path
+#           schema:
+#             type: string
+#           required: true
+#       responses:
+#         '200':
+#           description : Task completed successfully
+#           content: 
+#             application/json:
+#               schema:
+#                 $ref: '#/components/schemas/Task'
+#         '401': 
+#           description: Unauthorized
+#         '404':
+#           description: Task not found
+#         '500':
+#           description: Internal server error
 
 
-  /admin/list-user:
-    get:
-      tags:
-        - admin
-      summary: Get All Users
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Users retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
-        '401':
-          description: Unauthorized
-        '500':
-          description: Internal server error
+#   /admin/list-user:
+#     get:
+#       tags:
+#         - admin
+#       summary: Get All Users
+#       security:
+#         - bearerAuth: []
+#       responses:
+#         '200':
+#           description: Users retrieved successfully
+#           content:
+#             application/json:
+#               schema:
+#                 type: array
+#                 items:
+#                   $ref: '#/components/schemas/User'
+#         '401':
+#           description: Unauthorized
+#         '500':
+#           description: Internal server error
 
-  /admin/create-user:
-    post:
-      tags:
-        - admin
-      summary: Create User
-      requestBody:
-        content:
-          application/json:
-            schema:
-                type: object
-                example:
-                  username: author3zz
-                  password: '123456'
-                  email: nasdrz@eadszple.com
-                  role: user
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: User created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          description: Bad request
-        '401':
-          description: Unauthorized
-        '500':
-          description: Internal server error
+#   /admin/create-user:
+#     post:
+#       tags:
+#         - admin
+#       summary: Create User
+#       requestBody:
+#         content:
+#           application/json:
+#             schema:
+#                 type: object
+#                 example:
+#                   username: author3zz
+#                   password: '123456'
+#                   email: nasdrz@eadszple.com
+#                   role: user
+#       security:
+#         - bearerAuth: []
+#       responses:
+#         '200':
+#           description: User created successfully
+#           content:
+#             application/json:
+#               schema:
+#                 $ref: '#/components/schemas/User'
+#         '400':
+#           description: Bad request
+#         '401':
+#           description: Unauthorized
+#         '500':
+#           description: Internal server error
 
-  /admin/update-user/{id}:
-    put:
-      tags:
-        - admin
-      summary: Update a Specific User
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: User updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          description: Invalid ID supplied
-        '401':
-          description: Unauthorized
-        '404':
-          description: User not found
-        '500':
-          description: Internal server error
+#   /admin/update-user/{id}:
+#     put:
+#       tags:
+#         - admin
+#       summary: Update a Specific User
+#       parameters:
+#         - name: id
+#           in: path
+#           required: true
+#           schema:
+#             type: string
+#       security:
+#         - bearerAuth: []
+#       responses:
+#         '200':
+#           description: User updated successfully
+#           content:
+#             application/json:
+#               schema:
+#                 $ref: '#/components/schemas/User'
+#         '400':
+#           description: Invalid ID supplied
+#         '401':
+#           description: Unauthorized
+#         '404':
+#           description: User not found
+#         '500':
+#           description: Internal server error
 
-  /admin/delete-user/{id}:
-    delete:
-      tags:
-        - admin
-      summary: Delete User
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: User deleted successfully
-          content:
-            application/json: {}
-        '400':
-          description: Invalid ID supplied
-        '401':
-          description: Unauthorized
-        '404':
-          description: User not found
-        '500':
-          description: Internal server error
+#   /admin/delete-user/{id}:
+#     delete:
+#       tags:
+#         - admin
+#       summary: Delete User
+#       security:
+#         - bearerAuth: []
+#       parameters:
+#         - name: id
+#           in: path
+#           schema:
+#             type: string
+#           required: true
+#       responses:
+#         '200':
+#           description: User deleted successfully
+#           content:
+#             application/json: {}
+#         '400':
+#           description: Invalid ID supplied
+#         '401':
+#           description: Unauthorized
+#         '404':
+#           description: User not found
+#         '500':
+#           description: Internal server error
