@@ -1,69 +1,81 @@
-// const crypto = require("crypto");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
+const bcrypt = require("bcrypt");
+const crypto = require("crypto");
+const { sendPasswordResetEmail } = require("../services/mailService");
 
-// const User = require("../models/User");
-// const bcrypt = require("bcrypt");
-// const { sendPasswordResetEmail } = require("../services/mailService");
+const requestPasswordReset = async (req, res) => {
+  const { email } = req.body;
+  const userAuth = await prisma.userAuth.findUnique({
+    where: { Email: email },
+  });
 
-// const requestPasswordReset = async (req, res) => {
-//   const { email } = req.body;
-//   const user = await User.findOne({ email });
+  if (!userAuth) {
+    return res
+      .status(400)
+      .json({ error: "No account with that email address exists." });
+  }
 
-//   if (!user) {
-//     return res
-//       .status(400)
-//       .json({ error: "No account with that email address exists." });
-//   }
+  const resetToken = crypto.randomBytes(20).toString("hex");
+  const resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour from now
 
-//   const resetToken = crypto.randomBytes(20).toString("hex");
-//   user.resetPasswordToken = resetToken;
-//   const resetPasswordExpires = Date.now() + 3600000;
-//   user.resetPasswordExpires = resetPasswordExpires;
-//   await user.save();
+  await prisma.userAuth.update({
+    where: { UserAuthID: userAuth.UserAuthID },
+    data: {
+      ResetPasswordToken: resetToken,
+      ResetPasswordExpires: resetPasswordExpires,
+    },
+  });
 
-//   const { success, error } = await sendPasswordResetEmail(email, resetToken);
+  const { success, error } = await sendPasswordResetEmail(email, resetToken);
 
-//   if (!success) {
-//     return res
-//       .status(500)
-//       .json({ error: "Failed to send reset email.", details: error });
-//   }
+  if (!success) {
+    return res
+      .status(500)
+      .json({ error: "Failed to send reset email.", details: error });
+  }
 
-//   res.status(200).json({ message: "Password reset email sent." });
-// };
+  res.status(200).json({ message: "Password reset email sent." });
+};
 
-// const resetPassword = async (req, res) => {
-//   const { resetToken } = req.params;
-//   const { newPassword } = req.body;
+const resetPassword = async (req, res) => {
+  const { resetToken } = req.params;
+  const { newPassword } = req.body;
 
-//   console.log("Token from URL:", resetToken);
+  const userAuth = await prisma.userAuth.findFirst({
+    where: {
+      ResetPasswordToken: resetToken,
+      ResetPasswordExpires: {
+        gt: new Date(),
+      },
+    },
+  });
 
-//   const user = await User.findOne({
-//     resetPasswordToken: resetToken,
-//     resetPasswordExpires: { $gt: Date.now() },
-//   });
+  if (!userAuth) {
+    return res
+      .status(400)
+      .json({ error: "Password reset token is invalid or has expired." });
+  }
 
-//   if (!user) {
-//     return res
-//       .status(400)
-//       .json({ error: "Password reset token is invalid or has expired." });
-//   }
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-//   try {
-//     const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.userAuth.update({
+      where: { UserAuthID: userAuth.UserAuthID },
+      data: {
+        Password: hashedPassword,
+        ResetPasswordToken: null,
+        ResetPasswordExpires: null,
+      },
+    });
 
-//     user.password = hashedPassword;
+    res.status(200).json({ message: "Password successfully reset." });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 
-//     user.resetPasswordToken = undefined;
-//     user.resetPasswordExpires = undefined;
-//     await user.save();
-
-//     res.status(200).json({ message: "Password successfully reset." });
-//   } catch (error) {
-//     res.status(400).json({ error: error.message });
-//   }
-// };
-
-// module.exports = {
-//   requestPasswordReset,
-//   resetPassword,
-// };
+module.exports = {
+  requestPasswordReset,
+  resetPassword,
+};
