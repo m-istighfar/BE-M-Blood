@@ -24,12 +24,24 @@ exports.createHelpOffer = async (req, res) => {
       return res.status(400).json({ error: "Invalid blood type" });
     }
 
+    const userWithProvince = await prisma.user.findUnique({
+      where: { UserID: userId },
+      include: { Province: true },
+    });
+
+    if (!userWithProvince?.Province) {
+      return res
+        .status(400)
+        .json({ error: "User's province information is missing" });
+    }
+
     const newHelpOffer = await prisma.helpOffer.create({
       data: {
         UserID: userId,
+        BloodTypeID: bloodTypeRecord.BloodTypeID,
         IsWillingToDonate: isWillingToDonate,
         CanHelpInEmergency: canHelpInEmergency,
-        BloodTypeID: bloodTypeRecord.BloodTypeID,
+        Location: userWithProvince.Province.Capital,
         Reason: reason,
       },
     });

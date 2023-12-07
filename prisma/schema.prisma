@@ -91,6 +91,7 @@ model HelpOffer {
   BloodType          BloodType  @relation(fields: [BloodTypeID], references: [BloodTypeID])
   IsWillingToDonate  Boolean    @default(false)
   CanHelpInEmergency Boolean    @default(false)
+  Location           String
   Reason             String?    
   CreatedAt          DateTime   @default(now())
   UpdatedAt          DateTime   @updatedAt
