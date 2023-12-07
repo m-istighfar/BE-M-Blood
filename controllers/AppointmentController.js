@@ -6,18 +6,23 @@ exports.createAppointment = async (req, res) => {
     const userId = req.user.id;
     const { bloodType, scheduledDate } = req.body;
 
-    if (!scheduledDate || new Date(scheduledDate) < new Date()) {
-      return res.status(400).json({ error: "Invalid or past scheduled date" });
+    if (!scheduledDate || isNaN(new Date(scheduledDate).getTime())) {
+      return res.status(400).json({ error: "Invalid scheduled date" });
+    }
+
+    const appointmentDate = new Date(scheduledDate);
+    if (appointmentDate < new Date()) {
+      return res
+        .status(400)
+        .json({ error: "Scheduled date cannot be in the past" });
     }
 
     const userWithProvince = await prisma.user.findUnique({
       where: { UserID: userId },
-      include: {
-        Province: true,
-      },
+      include: { Province: true },
     });
 
-    if (!userWithProvince || !userWithProvince.Province) {
+    if (!userWithProvince?.Province) {
       return res
         .status(400)
         .json({ error: "User's province information is missing" });
@@ -30,34 +35,38 @@ exports.createAppointment = async (req, res) => {
       return res.status(400).json({ error: "Invalid blood type" });
     }
 
+    const startOfDay = new Date(appointmentDate).setHours(0, 0, 0, 0);
+    const endOfDay = new Date(appointmentDate).setHours(23, 59, 59, 999);
+
     const existingAppointment = await prisma.appointment.findFirst({
       where: {
         UserID: userId,
-        ScheduledDate: {
-          gte: new Date(new Date(scheduledDate).setHours(0, 0, 0, 0)),
-          lte: new Date(new Date(scheduledDate).setHours(23, 59, 59, 999)),
-        },
+        ScheduledDate: { gte: new Date(startOfDay), lte: new Date(endOfDay) },
       },
     });
     if (existingAppointment) {
       return res
         .status(400)
-        .json({ error: "Appointment already exists on this date" });
+        .json({ error: "An appointment already exists on this date" });
     }
 
     const newAppointment = await prisma.appointment.create({
       data: {
         UserID: userId,
         BloodTypeID: bloodTypeRecord.BloodTypeID,
-        ScheduledDate: new Date(scheduledDate),
+        ScheduledDate: appointmentDate,
         Location: userWithProvince.Province.Capital,
       },
     });
 
-    res
-      .status(201)
-      .json({ message: "Appointment created successfully", newAppointment });
+    res.status(201).json({
+      message: "Appointment created successfully",
+      appointmentDetails: newAppointment,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      error:
+        "An error occurred while creating the appointment: " + error.message,
+    });
   }
 };
