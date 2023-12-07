@@ -21,6 +21,7 @@ const authRoutes = require("./routes/authRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
 const emergencyRoutes = require("./routes/emergencyRoutes");
 const helpOfferRoutes = require("./routes/helpOfferRoutes");
+const bloodDriveRoutes = require("./routes/bloodDriveRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 
@@ -62,6 +63,13 @@ app.use(
   authMiddleware,
   authorizationMiddleware(["user"]),
   helpOfferRoutes
+);
+
+app.use(
+  "/blood-drive",
+  authMiddleware,
+  authorizationMiddleware(["user"]),
+  bloodDriveRoutes
 );
 // app.use(
 //   "/admin",
