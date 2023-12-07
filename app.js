@@ -19,7 +19,8 @@ const applyMiddleware = require("./middleware/index");
 
 const authRoutes = require("./routes/authRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
-const emergencyRoutes
+const emergencyRoutes = require("./routes/emergencyRoutes");
+const helpOfferRoutes = require("./routes/helpOfferRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 
@@ -47,6 +48,20 @@ app.use(
   authMiddleware,
   authorizationMiddleware(["user"]),
   appointmentRoutes
+);
+
+app.use(
+  "/emergency",
+  authMiddleware,
+  authorizationMiddleware(["user"]),
+  emergencyRoutes
+);
+
+app.use(
+  "/help-offer",
+  authMiddleware,
+  authorizationMiddleware(["user"]),
+  helpOfferRoutes
 );
 // app.use(
 //   "/admin",

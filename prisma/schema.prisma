@@ -77,6 +77,7 @@ model EmergencyRequest {
   BloodTypeID     Int
   BloodType       BloodType     @relation(fields: [BloodTypeID], references: [BloodTypeID])
   RequestDate     DateTime
+  AdditionalInfo  String?
   CreatedAt       DateTime      @default(now())
   UpdatedAt       DateTime      @updatedAt
 }
