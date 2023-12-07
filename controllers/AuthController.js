@@ -14,8 +14,16 @@ const {
 } = require("../config/jwt");
 
 const register = async (req, res) => {
-  const { username, email, password, name, phone, provinceId, additionalInfo } =
-    req.body;
+  const {
+    username,
+    email,
+    password,
+    name,
+    phone,
+    role,
+    provinceId,
+    additionalInfo,
+  } = req.body;
 
   const existingUserAuthByUsername = await prisma.userAuth.findUnique({
     where: { Username: username },
@@ -49,7 +57,7 @@ const register = async (req, res) => {
         Email: email,
         Password: hashedPassword,
         VerificationToken: verificationToken,
-        Role: role || "user", // default role
+        Role: role || "user",
       },
     });
 
