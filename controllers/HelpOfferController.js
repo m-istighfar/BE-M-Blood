@@ -4,19 +4,33 @@ const prisma = new PrismaClient();
 exports.createHelpOffer = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { reason, availability } = req.body;
+    const { isWillingToDonate, canHelpInEmergency, bloodType, reason } =
+      req.body;
 
-    if (!reason || !availability) {
-      return res
-        .status(400)
-        .json({ error: "Reason and availability are required" });
+    if (
+      typeof isWillingToDonate !== "boolean" ||
+      typeof canHelpInEmergency !== "boolean"
+    ) {
+      return res.status(400).json({
+        error:
+          "isWillingToDonate and canHelpInEmergency fields must be boolean",
+      });
+    }
+
+    const bloodTypeRecord = await prisma.bloodType.findFirst({
+      where: { Type: bloodType },
+    });
+    if (!bloodTypeRecord) {
+      return res.status(400).json({ error: "Invalid blood type" });
     }
 
     const newHelpOffer = await prisma.helpOffer.create({
       data: {
         UserID: userId,
+        IsWillingToDonate: isWillingToDonate,
+        CanHelpInEmergency: canHelpInEmergency,
+        BloodTypeID: bloodTypeRecord.BloodTypeID,
         Reason: reason,
-        Availability: availability,
       },
     });
 

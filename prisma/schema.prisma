@@ -13,6 +13,7 @@ model BloodType {
   Appointments      Appointment[]
   EmergencyRequests EmergencyRequest[]
   BloodInventories  BloodInventory[]
+  HelpOffer         HelpOffer[]
 }
 
 model UserAuth {
@@ -83,15 +84,18 @@ model EmergencyRequest {
 }
 
 model HelpOffer {
-  OfferID           Int       @id @default(autoincrement())
-  UserID            Int
-  User              User      @relation(fields: [UserID], references: [UserID])
-  IsWillingToDonate Boolean   @default(false)
-  CanHelpInEmergency Boolean  @default(false)
-  Reason            String?   
-  CreatedAt         DateTime  @default(now())
-  UpdatedAt         DateTime  @updatedAt
+  OfferID            Int        @id @default(autoincrement())
+  UserID             Int
+  User               User       @relation(fields: [UserID], references: [UserID])
+  BloodTypeID        Int        
+  BloodType          BloodType  @relation(fields: [BloodTypeID], references: [BloodTypeID])
+  IsWillingToDonate  Boolean    @default(false)
+  CanHelpInEmergency Boolean    @default(false)
+  Reason             String?    
+  CreatedAt          DateTime   @default(now())
+  UpdatedAt          DateTime   @updatedAt
 }
+
 
 
 model BloodDrive {
