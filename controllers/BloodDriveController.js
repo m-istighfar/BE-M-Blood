@@ -1,6 +1,23 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+exports.getAllBloodDrives = async (req, res) => {
+  try {
+    const bloodDrives = await prisma.bloodDrive.findMany({
+      include: {
+        Province: true,
+        User: true,
+      },
+    });
+
+    res.status(200).json(bloodDrives);
+  } catch (error) {
+    res.status(500).json({
+      error: "An error occurred while fetching blood drives: " + error.message,
+    });
+  }
+};
+
 exports.createBloodDrive = async (req, res) => {
   try {
     const userId = req.user.id;
