@@ -67,6 +67,7 @@ model Appointment {
   BloodType       BloodType     @relation(fields: [BloodTypeID], references: [BloodTypeID])
   ScheduledDate   DateTime
   Location        String? 
+  Status          AppointmentStatus @default(scheduled)
   CreatedAt       DateTime      @default(now())
   UpdatedAt       DateTime      @updatedAt
 }
@@ -128,4 +129,11 @@ model BloodInventory {
 enum UserRole {
   admin
   user
+}
+
+enum AppointmentStatus {
+  scheduled
+  completed
+  cancelled
+  rescheduled
 }
