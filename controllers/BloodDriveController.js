@@ -18,6 +18,24 @@ exports.getAllBloodDrives = async (req, res) => {
   }
 };
 
+exports.getBloodDriveById = async (req, res) => {
+  try {
+    const { bloodDriveId } = req.params;
+
+    const bloodDrive = await prisma.bloodDrive.findUnique({
+      where: { DriveID: parseInt(bloodDriveId) },
+    });
+
+    if (!bloodDrive) {
+      return res.status(404).json({ error: "Blood drive not found" });
+    }
+
+    res.status(200).json(bloodDrive);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.createBloodDrive = async (req, res) => {
   try {
     const userId = req.user.id;
