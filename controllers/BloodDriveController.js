@@ -83,3 +83,22 @@ exports.createBloodDrive = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.updateBloodDrive = async (req, res) => {
+  try {
+    const { bloodDriveId } = req.params;
+    const updateData = req.body;
+
+    const updatedBloodDrive = await prisma.bloodDrive.update({
+      where: { DriveID: parseInt(bloodDriveId) },
+      data: updateData,
+    });
+
+    res.status(200).json({
+      message: "Blood drive updated successfully",
+      updatedBloodDrive,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
