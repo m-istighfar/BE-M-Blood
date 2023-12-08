@@ -70,3 +70,59 @@ exports.createAppointment = async (req, res) => {
     });
   }
 };
+
+exports.rescheduleAppointment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { appointmentId, newScheduledDate } = req.body;
+
+    if (!newScheduledDate || isNaN(new Date(newScheduledDate).getTime())) {
+      return res.status(400).json({ error: "Invalid new scheduled date" });
+    }
+
+    const newAppointmentDate = new Date(newScheduledDate);
+    if (newAppointmentDate < new Date()) {
+      return res
+        .status(400)
+        .json({ error: "New scheduled date cannot be in the past" });
+    }
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { AppointmentID: appointmentId },
+    });
+
+    if (!appointment || appointment.UserID !== userId) {
+      return res
+        .status(404)
+        .json({ error: "Appointment not found or user mismatch" });
+    }
+
+    if (
+      appointment.Status === "completed" ||
+      appointment.Status === "cancelled"
+    ) {
+      return res.status(400).json({
+        error: "Cannot reschedule a completed or cancelled appointment",
+      });
+    }
+
+    const updatedAppointment = await prisma.appointment.update({
+      where: { AppointmentID: appointmentId },
+      data: {
+        ScheduledDate: newAppointmentDate,
+        Status: "rescheduled",
+      },
+    });
+
+    res.status(200).json({
+      message: "Appointment rescheduled successfully",
+      updatedAppointmentDetails: updatedAppointment,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error:
+        "An error occurred while rescheduling the appointment: " +
+        error.message,
+    });
+  }
+};
