@@ -45,6 +45,36 @@ exports.getAppointments = async (req, res) => {
   }
 };
 
+exports.getAppointmentById = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const { appointmentId } = req.params;
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { AppointmentID: parseInt(appointmentId) },
+      include: {
+        BloodType: true,
+      },
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ error: "Appointment not found" });
+    }
+
+    if (userRole !== "admin" && appointment.UserID !== userId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    res.status(200).json(appointment);
+  } catch (error) {
+    res.status(500).json({
+      error:
+        "An error occurred while fetching the appointment: " + error.message,
+    });
+  }
+};
+
 exports.createAppointment = async (req, res) => {
   try {
     const userId = req.user.id;
