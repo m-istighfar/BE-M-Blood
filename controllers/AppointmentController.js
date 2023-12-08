@@ -1,6 +1,50 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+exports.getAppointments = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const { status, startDate, endDate, userId: queryUserId } = req.query;
+
+    let queryOptions = {
+      include: {
+        BloodType: true,
+      },
+    };
+
+    if (userRole === "admin") {
+      if (queryUserId) {
+        queryOptions.where = { UserID: parseInt(queryUserId) };
+      }
+    } else {
+      queryOptions.where = { UserID: userId };
+    }
+
+    if (status) {
+      queryOptions.where = { ...queryOptions.where, Status: status };
+    }
+
+    if (startDate && endDate) {
+      queryOptions.where = {
+        ...queryOptions.where,
+        ScheduledDate: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
+      };
+    }
+
+    const appointments = await prisma.appointment.findMany(queryOptions);
+
+    res.status(200).json(appointments);
+  } catch (error) {
+    res.status(500).json({
+      error: "An error occurred while fetching appointments: " + error.message,
+    });
+  }
+};
+
 exports.createAppointment = async (req, res) => {
   try {
     const userId = req.user.id;
