@@ -44,12 +44,7 @@ applyMiddleware(app);
 // app.use(databaseMiddleware);
 
 app.use("/auth", authRoutes);
-app.use(
-  "/appointments",
-  authMiddleware,
-  authorizationMiddleware(["user"]),
-  appointmentRoutes
-);
+app.use("/appointments", authMiddleware, appointmentRoutes);
 
 app.use(
   "/emergency",

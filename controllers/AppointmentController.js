@@ -175,3 +175,50 @@ exports.cancelAppointment = async (req, res) => {
     });
   }
 };
+
+exports.completeAppointment = async (req, res) => {
+  try {
+    const { appointmentId } = req.body;
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { AppointmentID: appointmentId },
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ error: "Appointment not found" });
+    }
+
+    if (new Date(appointment.ScheduledDate) > new Date()) {
+      return res.status(400).json({
+        error: "Cannot complete an appointment that is in the future",
+      });
+    }
+
+    if (
+      appointment.Status === "completed" ||
+      appointment.Status === "cancelled"
+    ) {
+      return res.status(400).json({
+        error: "Cannot complete a cancelled or already completed appointment",
+      });
+    }
+
+    const updatedAppointment = await prisma.appointment.update({
+      where: { AppointmentID: appointmentId },
+      data: {
+        Status: "completed",
+      },
+    });
+
+    res.status(200).json({
+      message: "Appointment marked as completed successfully",
+      updatedAppointmentDetails: updatedAppointment,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error:
+        "An error occurred while updating the appointment status: " +
+        error.message,
+    });
+  }
+};
