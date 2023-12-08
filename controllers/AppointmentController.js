@@ -126,3 +126,52 @@ exports.rescheduleAppointment = async (req, res) => {
     });
   }
 };
+
+exports.cancelAppointment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { appointmentId } = req.body;
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { AppointmentID: appointmentId },
+    });
+
+    if (!appointment || appointment.UserID !== userId) {
+      return res
+        .status(404)
+        .json({ error: "Appointment not found or user mismatch" });
+    }
+
+    if (
+      appointment.Status === "completed" ||
+      appointment.Status === "cancelled"
+    ) {
+      return res.status(400).json({
+        error: "Cannot cancel a completed or already cancelled appointment",
+      });
+    }
+
+    if (new Date(appointment.ScheduledDate) < new Date()) {
+      return res
+        .status(400)
+        .json({ error: "Cannot cancel a past appointment" });
+    }
+
+    const updatedAppointment = await prisma.appointment.update({
+      where: { AppointmentID: appointmentId },
+      data: {
+        Status: "cancelled",
+      },
+    });
+
+    res.status(200).json({
+      message: "Appointment cancelled successfully",
+      updatedAppointmentDetails: updatedAppointment,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error:
+        "An error occurred while cancelling the appointment: " + error.message,
+    });
+  }
+};
