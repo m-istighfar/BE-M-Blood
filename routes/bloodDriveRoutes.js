@@ -6,4 +6,6 @@ router.post("/create", BloodDriveController.createBloodDrive);
 router.get("/", BloodDriveController.getAllBloodDrives);
 router.get("/:bloodDriveId", BloodDriveController.getBloodDriveById);
 router.put("/:bloodDriveId", BloodDriveController.updateBloodDrive);
+router.delete("/:bloodDriveId", BloodDriveController.deleteBloodDrive);
+
 module.exports = router;

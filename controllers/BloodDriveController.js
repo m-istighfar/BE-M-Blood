@@ -102,3 +102,17 @@ exports.updateBloodDrive = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.deleteBloodDrive = async (req, res) => {
+  try {
+    const { bloodDriveId } = req.params;
+
+    await prisma.bloodDrive.delete({
+      where: { DriveID: parseInt(bloodDriveId) },
+    });
+
+    res.status(200).json({ message: "Blood drive deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
