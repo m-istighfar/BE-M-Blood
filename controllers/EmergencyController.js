@@ -41,6 +41,30 @@ exports.getAllEmergencyRequests = async (req, res) => {
   }
 };
 
+exports.getEmergencyRequestById = async (req, res) => {
+  try {
+    const { emergencyRequestId } = req.params;
+
+    const emergencyRequest = await prisma.emergencyRequest.findUnique({
+      where: { RequestID: parseInt(emergencyRequestId) },
+      include: {
+        BloodType: true,
+        User: true,
+      },
+    });
+
+    if (!emergencyRequest) {
+      return res.status(404).json({ error: "Emergency request not found" });
+    }
+
+    res.status(200).json(emergencyRequest);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Error fetching emergency request: " + error.message });
+  }
+};
+
 exports.createEmergencyRequest = async (req, res) => {
   try {
     const userId = req.user.id;
