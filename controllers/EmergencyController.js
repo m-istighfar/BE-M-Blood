@@ -119,3 +119,43 @@ exports.createEmergencyRequest = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.updateEmergencyRequest = async (req, res) => {
+  try {
+    const { emergencyRequestId } = req.params;
+    const { additionalInfo, newBloodTypeID } = req.body;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const emergencyRequest = await prisma.emergencyRequest.findUnique({
+      where: { RequestID: parseInt(emergencyRequestId) },
+    });
+
+    if (!emergencyRequest) {
+      return res.status(404).json({ error: "Emergency request not found" });
+    }
+
+    if (emergencyRequest.UserID !== userId && userRole !== "admin") {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized to update this emergency request" });
+    }
+
+    const updatedEmergencyRequest = await prisma.emergencyRequest.update({
+      where: { RequestID: parseInt(emergencyRequestId) },
+      data: {
+        AdditionalInfo: additionalInfo || emergencyRequest.AdditionalInfo,
+        BloodTypeID: newBloodTypeID || emergencyRequest.BloodTypeID,
+      },
+    });
+
+    res.status(200).json({
+      message: "Emergency request updated successfully",
+      emergencyRequest: updatedEmergencyRequest,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Error updating emergency request: " + error.message });
+  }
+};
