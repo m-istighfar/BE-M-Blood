@@ -1,19 +1,16 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-// BloodDriveController.js
-
 exports.getAllBloodDrives = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
-    // Sorting and Filtering parameters
-    const sortBy = req.query.sortBy || "ScheduledDate"; // default sorting by date
-    const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc"; // 'asc' or 'desc'
-    const filterProvince = req.query.filterProvince; // filtering by province
-    const filterDesignation = req.query.filterDesignation; // filtering by designation
+    const sortBy = req.query.sortBy || "ScheduledDate";
+    const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
+    const filterProvince = req.query.filterProvince;
+    const filterDesignation = req.query.filterDesignation;
 
     let whereClause = {};
     if (filterProvince) {
