@@ -92,6 +92,8 @@ exports.getBloodInventories = async (req, res) => {
 
 exports.updateBloodInventory = async (req, res) => {
   const { inventoryID } = req.params;
+  const { quantity, expiryDate } = req.body;
+
   try {
     const existingInventory = await prisma.bloodInventory.findUnique({
       where: { InventoryID: parseInt(inventoryID) },
@@ -102,7 +104,10 @@ exports.updateBloodInventory = async (req, res) => {
 
     const updatedInventory = await prisma.bloodInventory.update({
       where: { InventoryID: parseInt(inventoryID) },
-      data: req.body,
+      data: {
+        Quantity: quantity,
+        ExpiryDate: expiryDate ? new Date(expiryDate) : undefined,
+      },
     });
 
     successResponse(
