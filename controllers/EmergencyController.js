@@ -3,24 +3,48 @@ const prisma = new PrismaClient();
 
 exports.getAllEmergencyRequests = async (req, res) => {
   try {
-    const { page, limit, status } = req.query;
+    const {
+      page,
+      limit,
+      bloodType,
+      startDate,
+      endDate,
+      provinceId,
+      sortBy,
+      sortOrder,
+    } = req.query;
 
     const pageNumber = parseInt(page) || 1;
     const pageSize = parseInt(limit) || 10;
     const offset = (pageNumber - 1) * pageSize;
+    const sortingCriteria = sortBy || "RequestDate";
+    const sortingOrder = sortOrder === "desc" ? "desc" : "asc";
 
     let whereClause = {};
-    if (status) {
-      whereClause.Status = status;
+    if (bloodType) {
+      whereClause.BloodTypeID = parseInt(bloodType);
+    }
+
+    if (startDate && endDate) {
+      whereClause.RequestDate = {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
+      };
+    }
+    if (provinceId) {
+      whereClause.ProvinceID = parseInt(provinceId);
     }
 
     const emergencyRequests = await prisma.emergencyRequest.findMany({
       skip: offset,
       take: pageSize,
+      orderBy: {
+        [sortingCriteria]: sortingOrder,
+      },
       where: whereClause,
       include: {
         BloodType: true,
-        User: true,
+        User: { select: { Name: true, Province: true } },
       },
     });
 
@@ -29,7 +53,7 @@ exports.getAllEmergencyRequests = async (req, res) => {
     });
 
     res.status(200).json({
-      total: totalRequests,
+      totalRequests,
       totalPages: Math.ceil(totalRequests / pageSize),
       currentPage: pageNumber,
       emergencyRequests,
