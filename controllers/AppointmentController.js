@@ -5,39 +5,72 @@ exports.getAppointments = async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
-    const { status, startDate, endDate, userId: queryUserId } = req.query;
+    const {
+      status,
+      startDate,
+      endDate,
+      userId: queryUserId,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    } = req.query;
+
+    const pageNumber = parseInt(page) || 1;
+    const pageSize = parseInt(limit) || 10;
+    const offset = (pageNumber - 1) * pageSize;
+    const sortingCriteria = sortBy || "ScheduledDate";
+    const sortingOrder = sortOrder === "desc" ? "desc" : "asc";
+
+    const validStatuses = [
+      "scheduled",
+      "completed",
+      "cancelled",
+      "rescheduled",
+    ];
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({ error: "Invalid appointment status" });
+    }
 
     let queryOptions = {
+      skip: offset,
+      take: pageSize,
+      orderBy: {
+        [sortingCriteria]: sortingOrder,
+      },
       include: {
         BloodType: true,
       },
     };
 
-    if (userRole === "admin") {
-      if (queryUserId) {
-        queryOptions.where = { UserID: parseInt(queryUserId) };
-      }
+    if (userRole === "admin" && queryUserId) {
+      queryOptions.where = { UserID: parseInt(queryUserId) };
     } else {
       queryOptions.where = { UserID: userId };
     }
 
     if (status) {
-      queryOptions.where = { ...queryOptions.where, Status: status };
+      queryOptions.where.Status = status;
     }
 
     if (startDate && endDate) {
-      queryOptions.where = {
-        ...queryOptions.where,
-        ScheduledDate: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
-        },
+      queryOptions.where.ScheduledDate = {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
       };
     }
 
     const appointments = await prisma.appointment.findMany(queryOptions);
+    const totalRecords = await prisma.appointment.count({
+      where: queryOptions.where,
+    });
 
-    res.status(200).json(appointments);
+    res.status(200).json({
+      totalRecords,
+      totalPages: Math.ceil(totalRecords / pageSize),
+      currentPage: pageNumber,
+      appointments,
+    });
   } catch (error) {
     res.status(500).json({
       error: "An error occurred while fetching appointments: " + error.message,
