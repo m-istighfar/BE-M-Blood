@@ -62,6 +62,7 @@ exports.getBloodInventories = async (req, res) => {
   try {
     const { page, limit, bloodTypeID, provinceID } = req.query;
     const pageNumber = Math.max(parseInt(page) || 1, 1);
+
     const pageSize = Math.max(parseInt(limit) || 10, 1);
     const offset = (pageNumber - 1) * pageSize;
 
