@@ -1,6 +1,46 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+exports.getAllEmergencyRequests = async (req, res) => {
+  try {
+    const { page, limit, status } = req.query;
+
+    const pageNumber = parseInt(page) || 1;
+    const pageSize = parseInt(limit) || 10;
+    const offset = (pageNumber - 1) * pageSize;
+
+    let whereClause = {};
+    if (status) {
+      whereClause.Status = status;
+    }
+
+    const emergencyRequests = await prisma.emergencyRequest.findMany({
+      skip: offset,
+      take: pageSize,
+      where: whereClause,
+      include: {
+        BloodType: true,
+        User: true,
+      },
+    });
+
+    const totalRequests = await prisma.emergencyRequest.count({
+      where: whereClause,
+    });
+
+    res.status(200).json({
+      total: totalRequests,
+      totalPages: Math.ceil(totalRequests / pageSize),
+      currentPage: pageNumber,
+      emergencyRequests,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Error fetching emergency requests: " + error.message });
+  }
+};
+
 exports.createEmergencyRequest = async (req, res) => {
   try {
     const userId = req.user.id;
