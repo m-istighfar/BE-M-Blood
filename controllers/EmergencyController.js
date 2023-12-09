@@ -32,7 +32,9 @@ exports.getAllEmergencyRequests = async (req, res) => {
       };
     }
     if (provinceId) {
-      whereClause.ProvinceID = parseInt(provinceId);
+      whereClause.User = {
+        ProvinceID: parseInt(provinceId),
+      };
     }
 
     const emergencyRequests = await prisma.emergencyRequest.findMany({
