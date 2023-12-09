@@ -91,6 +91,25 @@ exports.getBloodInventories = async (req, res) => {
   }
 };
 
+exports.getBloodInventoryById = async (req, res) => {
+  const { inventoryID } = req.params;
+
+  try {
+    const inventory = await prisma.bloodInventory.findUnique({
+      where: { InventoryID: parseInt(inventoryID) },
+      include: { BloodType: true, Province: true },
+    });
+
+    if (!inventory) {
+      return errorResponse(res, "Blood inventory not found", 404);
+    }
+
+    successResponse(res, "Blood inventory fetched successfully", inventory);
+  } catch (error) {
+    errorResponse(res, "Error fetching blood inventory: " + error.message);
+  }
+};
+
 exports.updateBloodInventory = async (req, res) => {
   const { inventoryID } = req.params;
   const { quantity, expiryDate } = req.body;

@@ -5,6 +5,7 @@ const bloodInventoryController = require("../controllers/BloodInventoryControlle
 router.post("/", bloodInventoryController.createBloodInventory);
 
 router.get("/", bloodInventoryController.getBloodInventories);
+router.get("/:inventoryID", bloodInventoryController.getBloodInventoryById);
 
 router.put("/:inventoryID", bloodInventoryController.updateBloodInventory);
 
