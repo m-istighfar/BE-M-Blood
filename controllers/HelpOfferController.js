@@ -1,6 +1,22 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+exports.getAllHelpOffers = async (req, res) => {
+  try {
+    const helpOffers = await prisma.helpOffer.findMany({
+      include: {
+        User: true,
+        BloodType: true,
+      },
+    });
+    res.status(200).json(helpOffers);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Error fetching help offers: " + error.message });
+  }
+};
+
 exports.createHelpOffer = async (req, res) => {
   try {
     const userId = req.user.id;
