@@ -5,15 +5,20 @@ exports.getAllHelpOffers = async (req, res) => {
   try {
     const helpOffers = await prisma.helpOffer.findMany({
       include: {
-        User: true,
+        User: { select: { Name: true, Province: true } },
         BloodType: true,
       },
     });
+
+    if (helpOffers.length === 0) {
+      return res.status(404).json({ message: "No help offers found" });
+    }
+
     res.status(200).json(helpOffers);
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error fetching help offers: " + error.message });
+    res.status(500).json({
+      error: "Server error while fetching help offers: " + error.message,
+    });
   }
 };
 
@@ -75,24 +80,43 @@ exports.createHelpOffer = async (req, res) => {
 exports.updateHelpOffer = async (req, res) => {
   try {
     const { helpOfferId } = req.params;
+    const userId = req.user.id;
     const { isWillingToDonate, canHelpInEmergency, reason } = req.body;
+
+    const existingHelpOffer = await prisma.helpOffer.findUnique({
+      where: { OfferID: parseInt(helpOfferId) },
+    });
+
+    if (!existingHelpOffer) {
+      return res.status(404).json({ error: "Help offer not found" });
+    }
+
+    // Authorization check: Only allow the creator or an admin to update
+    if (existingHelpOffer.UserID !== userId && req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized to update this help offer" });
+    }
 
     const updatedHelpOffer = await prisma.helpOffer.update({
       where: { OfferID: parseInt(helpOfferId) },
       data: {
-        IsWillingToDonate: isWillingToDonate,
-        CanHelpInEmergency: canHelpInEmergency,
-        Reason: reason,
+        IsWillingToDonate:
+          isWillingToDonate ?? existingHelpOffer.IsWillingToDonate,
+        CanHelpInEmergency:
+          canHelpInEmergency ?? existingHelpOffer.CanHelpInEmergency,
+        Reason: reason ?? existingHelpOffer.Reason,
       },
     });
 
-    res
-      .status(200)
-      .json({ message: "Help offer updated successfully", updatedHelpOffer });
+    res.status(200).json({
+      message: "Help offer updated successfully",
+      helpOffer: updatedHelpOffer,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error updating help offer: " + error.message });
+    res.status(500).json({
+      error: "Server error while updating help offer: " + error.message,
+    });
   }
 };
 
