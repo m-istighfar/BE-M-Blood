@@ -1475,107 +1475,159 @@ const HelpOfferController = require("../controllers/HelpOfferController");
 
 router.post("/offer", HelpOfferController.createHelpOffer);
 router.get("/", HelpOfferController.getAllHelpOffers);
+router.get("/:helpOfferId", HelpOfferController.getHelpOfferById);
 router.put("/:helpOfferId", HelpOfferController.updateHelpOffer);
 router.delete("/:helpOfferId", HelpOfferController.deleteHelpOffer);
 
 module.exports = router;
+
 
 // HelpOfferController.js
 
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+const successResponse = (res, message, data = null) => {
+  return res.status(200).json({ message, data });
+};
+
+const errorResponse = (res, message, statusCode = 400) => {
+  return res.status(statusCode).json({ error: message });
+};
+
+const validateHelpOfferData = (data) => {
+  const { bloodType, isWillingToDonate, canHelpInEmergency } = data;
+
+  if (!bloodType) {
+    return "Blood type is required";
+  }
+  if (typeof isWillingToDonate !== "boolean") {
+    return "isWillingToDonate must be a boolean";
+  }
+  if (typeof canHelpInEmergency !== "boolean") {
+    return "canHelpInEmergency must be a boolean";
+  }
+  return null;
+};
+
 exports.getAllHelpOffers = async (req, res) => {
   try {
     const {
       page,
       limit,
-      search,
       bloodType,
-      willingToDonate,
+      isWillingToDonate,
       canHelpInEmergency,
+      location,
+      sort,
     } = req.query;
 
     const pageNumber = parseInt(page) || 1;
     const pageSize = parseInt(limit) || 10;
-    const offset = (pageNumber - 1) * pageSize;
 
     let whereClause = {};
-    if (search) {
-      whereClause.OR = [
-        { User: { Name: { contains: search } } },
-        { Reason: { contains: search } },
-        { Location: { contains: search } },
-      ];
-    }
-    if (bloodType) {
-      whereClause.BloodTypeID = parseInt(bloodType);
-    }
-    if (typeof willingToDonate === "boolean") {
-      whereClause.IsWillingToDonate = willingToDonate;
-    }
-    if (typeof canHelpInEmergency === "boolean") {
-      whereClause.CanHelpInEmergency = canHelpInEmergency;
+    if (bloodType) whereClause.BloodTypeID = parseInt(bloodType);
+    if (isWillingToDonate)
+      whereClause.IsWillingToDonate = isWillingToDonate === "true";
+    if (canHelpInEmergency)
+      whereClause.CanHelpInEmergency = canHelpInEmergency === "true";
+    if (location) whereClause.Location = { contains: location };
+
+    let orderBy = { CreatedAt: "desc" }; // Default sorting by CreatedAt
+
+    if (sort) {
+      const allowedSortFields = ["CreatedAt", "UpdatedAt"]; // Add more fields if needed
+      const [sortField, sortOrder] = sort.split(":");
+
+      if (allowedSortFields.includes(sortField)) {
+        orderBy = {
+          [sortField]: sortOrder.toLowerCase() === "asc" ? "asc" : "desc",
+        };
+      }
     }
 
     const helpOffers = await prisma.helpOffer.findMany({
-      skip: offset,
+      skip: (pageNumber - 1) * pageSize,
       take: pageSize,
       where: whereClause,
+      orderBy: orderBy,
       include: {
         User: true,
         BloodType: true,
       },
     });
 
-    const totalHelpOffers = await prisma.helpOffer.count({
-      where: whereClause,
-    });
+    const totalRecords = await prisma.helpOffer.count({ where: whereClause });
+    const totalPages = Math.ceil(totalRecords / pageSize);
 
-    res.status(200).json({
-      total: totalHelpOffers,
-      totalPages: Math.ceil(totalHelpOffers / pageSize),
-      currentPage: pageNumber,
+    return successResponse(res, "Help offers fetched successfully", {
+      totalRecords,
       helpOffers,
+      currentPage: pageNumber,
+      totalPages,
     });
   } catch (error) {
-    res.status(500).json({
-      error: "Server error while fetching help offers: " + error.message,
+    console.error(error);
+    return errorResponse(res, "Error fetching help offers", 500);
+  }
+};
+exports.getHelpOfferById = async (req, res) => {
+  try {
+    const { helpOfferId } = req.params;
+    const helpOffer = await prisma.helpOffer.findUnique({
+      where: { OfferID: parseInt(helpOfferId) },
+      include: {
+        User: true,
+        BloodType: true,
+      },
     });
+
+    if (!helpOffer) {
+      return errorResponse(res, "Help offer not found", 404);
+    }
+
+    return successResponse(res, "Help offer fetched successfully", helpOffer);
+  } catch (error) {
+    return errorResponse(res, "Error fetching help offer", 500);
   }
 };
 
 exports.createHelpOffer = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { isWillingToDonate, canHelpInEmergency, bloodType, reason } =
-      req.body;
+    const {
+      bloodType,
+      isWillingToDonate,
+      canHelpInEmergency,
+      reason,
+      location,
+    } = req.body;
 
-    if (
-      typeof isWillingToDonate !== "boolean" ||
-      typeof canHelpInEmergency !== "boolean"
-    ) {
-      return res.status(400).json({
-        error:
-          "isWillingToDonate and canHelpInEmergency must be boolean values",
-      });
+    const validationError = validateHelpOfferData({
+      bloodType,
+      isWillingToDonate,
+      canHelpInEmergency,
+    });
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
+
+    const isValidLocation = await prisma.province.findFirst({
+      where: { Name: location },
+    });
+
+    if (!isValidLocation) {
+      return errorResponse(
+        res,
+        "Invalid location, must be within a valid province"
+      );
     }
 
     const bloodTypeRecord = await prisma.bloodType.findFirst({
       where: { Type: bloodType },
     });
     if (!bloodTypeRecord) {
-      return res.status(400).json({ error: "Invalid blood type specified" });
-    }
-
-    const userWithProvince = await prisma.user.findUnique({
-      where: { UserID: userId },
-      include: { Province: true },
-    });
-    if (!userWithProvince || !userWithProvince.Province) {
-      return res
-        .status(404)
-        .json({ error: "User or user's province information not found" });
+      return errorResponse(res, "Invalid blood type");
     }
 
     const newHelpOffer = await prisma.helpOffer.create({
@@ -1584,19 +1636,19 @@ exports.createHelpOffer = async (req, res) => {
         BloodTypeID: bloodTypeRecord.BloodTypeID,
         IsWillingToDonate: isWillingToDonate,
         CanHelpInEmergency: canHelpInEmergency,
-        Location: userWithProvince.Province.Capital,
         Reason: reason,
+        Location: location,
       },
     });
 
-    res.status(201).json({
-      message: "Help offer created successfully",
-      helpOffer: newHelpOffer,
-    });
+    return successResponse(
+      res,
+      "Help offer created successfully",
+      newHelpOffer
+    );
   } catch (error) {
-    res.status(500).json({
-      error: "Server error while creating help offer: " + error.message,
-    });
+    console.error("Error creating help offer:", error);
+    return errorResponse(res, "Error creating help offer", 500);
   }
 };
 
@@ -1604,21 +1656,26 @@ exports.updateHelpOffer = async (req, res) => {
   try {
     const { helpOfferId } = req.params;
     const userId = req.user.id;
-    const { isWillingToDonate, canHelpInEmergency, reason } = req.body;
+    const { isWillingToDonate, canHelpInEmergency, reason, location } =
+      req.body;
 
     const existingHelpOffer = await prisma.helpOffer.findUnique({
       where: { OfferID: parseInt(helpOfferId) },
     });
 
     if (!existingHelpOffer) {
-      return res.status(404).json({ error: "Help offer not found" });
+      return errorResponse(res, "Help offer not found", 404);
     }
 
-    // Authorization check: Only allow the creator or an admin to update
-    if (existingHelpOffer.UserID !== userId && req.user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ error: "Unauthorized to update this help offer" });
+    const isValidLocation = await prisma.province.findFirst({
+      where: { Name: location },
+    });
+
+    if (!isValidLocation) {
+      return errorResponse(
+        res,
+        "Invalid location, must be within a valid province"
+      );
     }
 
     const updatedHelpOffer = await prisma.helpOffer.update({
@@ -1629,17 +1686,21 @@ exports.updateHelpOffer = async (req, res) => {
         CanHelpInEmergency:
           canHelpInEmergency ?? existingHelpOffer.CanHelpInEmergency,
         Reason: reason ?? existingHelpOffer.Reason,
+        Location: location ?? existingHelpOffer.Location,
       },
     });
 
-    res.status(200).json({
-      message: "Help offer updated successfullys",
-      helpOffer: updatedHelpOffer,
-    });
+    return successResponse(
+      res,
+      "Help offer updated successfully",
+      updatedHelpOffer
+    );
   } catch (error) {
-    res.status(500).json({
-      error: "Server error while updating help offer: " + error.message,
-    });
+    return errorResponse(
+      res,
+      "Error updating help offer: " + error.message,
+      500
+    );
   }
 };
 
@@ -1653,24 +1714,20 @@ exports.deleteHelpOffer = async (req, res) => {
     });
 
     if (!helpOffer) {
-      return res.status(404).json({ error: "Help offer not found" });
-    }
-
-    if (helpOffer.UserID !== userId && req.user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ error: "Unauthorized to delete this help offer" });
+      errorResponse(res, "Help offer not found", 404);
     }
 
     await prisma.helpOffer.delete({
       where: { OfferID: parseInt(helpOfferId) },
     });
 
-    res.status(200).json({ message: "Help offer deleted successfully" });
+    return successResponse(res, "Help offer deleted successfully");
   } catch (error) {
-    res.status(500).json({
-      error: "Server error while deleting help offer: " + error.message,
-    });
+    return errorResponse(
+      res,
+      "Error deleting help offer: " + error.message,
+      500
+    );
   }
 };
 
