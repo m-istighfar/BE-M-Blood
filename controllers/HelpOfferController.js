@@ -123,6 +123,21 @@ exports.updateHelpOffer = async (req, res) => {
 exports.deleteHelpOffer = async (req, res) => {
   try {
     const { helpOfferId } = req.params;
+    const userId = req.user.id;
+
+    const helpOffer = await prisma.helpOffer.findUnique({
+      where: { OfferID: parseInt(helpOfferId) },
+    });
+
+    if (!helpOffer) {
+      return res.status(404).json({ error: "Help offer not found" });
+    }
+
+    if (helpOffer.UserID !== userId && req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized to delete this help offer" });
+    }
 
     await prisma.helpOffer.delete({
       where: { OfferID: parseInt(helpOfferId) },
@@ -130,8 +145,8 @@ exports.deleteHelpOffer = async (req, res) => {
 
     res.status(200).json({ message: "Help offer deleted successfully" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error deleting help offer: " + error.message });
+    res.status(500).json({
+      error: "Server error while deleting help offer: " + error.message,
+    });
   }
 };
