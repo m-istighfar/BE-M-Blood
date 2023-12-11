@@ -26,39 +26,21 @@ const validateHelpOfferData = (data) => {
 
 exports.getAllHelpOffers = async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 10,
-      search = "",
-      bloodType,
-      isWillingToDonate,
-      canHelpInEmergency,
-    } = req.query;
+    const { page, limit, bloodType, isWillingToDonate, canHelpInEmergency } =
+      req.query;
 
-    const pageNumber = parseInt(page);
-    const pageSize = parseInt(limit);
-    const offset = (pageNumber - 1) * pageSize;
+    const pageNumber = parseInt(page) || 1;
+    const pageSize = parseInt(limit) || 10;
 
-    let whereClause = {
-      OR: [
-        { User: { Name: { contains: search } } },
-        { Location: { contains: search } },
-        { Reason: { contains: search } },
-      ],
-    };
-
-    if (bloodType) {
-      whereClause.BloodTypeID = parseInt(bloodType);
-    }
-    if (isWillingToDonate !== undefined) {
+    let whereClause = {};
+    if (bloodType) whereClause.BloodTypeID = parseInt(bloodType);
+    if (isWillingToDonate)
       whereClause.IsWillingToDonate = isWillingToDonate === "true";
-    }
-    if (canHelpInEmergency !== undefined) {
+    if (canHelpInEmergency)
       whereClause.CanHelpInEmergency = canHelpInEmergency === "true";
-    }
 
     const helpOffers = await prisma.helpOffer.findMany({
-      skip: offset,
+      skip: (pageNumber - 1) * pageSize,
       take: pageSize,
       where: whereClause,
       include: {
@@ -69,16 +51,14 @@ exports.getAllHelpOffers = async (req, res) => {
 
     const totalRecords = await prisma.helpOffer.count({ where: whereClause });
 
-    res.status(200).json({
+    return successResponse(res, "Help offers fetched successfully", {
       totalRecords,
-      totalPages: Math.ceil(totalRecords / pageSize),
-      currentPage: pageNumber,
       helpOffers,
+      currentPage: pageNumber,
+      totalPages: Math.ceil(totalRecords / pageSize),
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error fetching help offers: " + error.message });
+    return errorResponse(res, "Error fetching help offers", 500);
   }
 };
 
