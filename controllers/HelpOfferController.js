@@ -1,6 +1,31 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+const successResponse = (res, message, data = null) => {
+  return res.status(200).json({ message, data });
+};
+
+const errorResponse = (res, message, statusCode = 400) => {
+  return res.status(statusCode).json({ error: message });
+};
+
+const validateHelpOfferData = ({
+  bloodTypeID,
+  isWillingToDonate,
+  canHelpInEmergency,
+}) => {
+  if (!bloodTypeID) {
+    return "Blood type ID is required";
+  }
+  if (typeof isWillingToDonate !== "boolean") {
+    return "isWillingToDonate must be a boolean";
+  }
+  if (typeof canHelpInEmergency !== "boolean") {
+    return "canHelpInEmergency must be a boolean";
+  }
+  return null;
+};
+
 exports.getAllHelpOffers = async (req, res) => {
   try {
     const {
@@ -86,34 +111,23 @@ exports.getHelpOfferById = async (req, res) => {
 exports.createHelpOffer = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { isWillingToDonate, canHelpInEmergency, bloodType, reason } =
+    const { bloodType, isWillingToDonate, canHelpInEmergency, reason } =
       req.body;
 
-    if (
-      typeof isWillingToDonate !== "boolean" ||
-      typeof canHelpInEmergency !== "boolean"
-    ) {
-      return res.status(400).json({
-        error:
-          "isWillingToDonate and canHelpInEmergency must be boolean values",
-      });
+    const validationError = validateHelpOfferData({
+      bloodType,
+      isWillingToDonate,
+      canHelpInEmergency,
+    });
+    if (validationError) {
+      return errorResponse(res, validationError, 400);
     }
 
     const bloodTypeRecord = await prisma.bloodType.findFirst({
       where: { Type: bloodType },
     });
     if (!bloodTypeRecord) {
-      return res.status(400).json({ error: "Invalid blood type specified" });
-    }
-
-    const userWithProvince = await prisma.user.findUnique({
-      where: { UserID: userId },
-      include: { Province: true },
-    });
-    if (!userWithProvince || !userWithProvince.Province) {
-      return res
-        .status(404)
-        .json({ error: "User or user's province information not found" });
+      return errorResponse(res, "Invalid blood type", 400);
     }
 
     const newHelpOffer = await prisma.helpOffer.create({
@@ -122,19 +136,20 @@ exports.createHelpOffer = async (req, res) => {
         BloodTypeID: bloodTypeRecord.BloodTypeID,
         IsWillingToDonate: isWillingToDonate,
         CanHelpInEmergency: canHelpInEmergency,
-        Location: userWithProvince.Province.Capital,
         Reason: reason,
       },
     });
 
-    res.status(201).json({
-      message: "Help offer created successfully",
-      helpOffer: newHelpOffer,
-    });
+    return successResponse(
+      res,
+      "Help offer created successfully",
+      newHelpOffer
+    );
   } catch (error) {
-    res.status(500).json({
-      error: "Server error while creating help offer: " + error.message,
-    });
+    return errorResponse(
+      res,
+      "Server error while creating help offer: " + error.message
+    );
   }
 };
 
