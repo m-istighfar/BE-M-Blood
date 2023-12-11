@@ -59,6 +59,30 @@ exports.getAllHelpOffers = async (req, res) => {
   }
 };
 
+exports.getHelpOfferById = async (req, res) => {
+  try {
+    const { helpOfferId } = req.params;
+
+    const helpOffer = await prisma.helpOffer.findUnique({
+      where: { OfferID: parseInt(helpOfferId) },
+      include: {
+        User: true,
+        BloodType: true,
+      },
+    });
+
+    if (!helpOffer) {
+      return res.status(404).json({ error: "Help offer not found" });
+    }
+
+    res.status(200).json(helpOffer);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Error fetching help offer: " + error.message });
+  }
+};
+
 exports.createHelpOffer = async (req, res) => {
   try {
     const userId = req.user.id;
