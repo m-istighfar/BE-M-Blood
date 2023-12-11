@@ -136,14 +136,7 @@ exports.updateHelpOffer = async (req, res) => {
     });
 
     if (!existingHelpOffer) {
-      return res.status(404).json({ error: "Help offer not found" });
-    }
-
-    // Authorization check: Only allow the creator or an admin to update
-    if (existingHelpOffer.UserID !== userId && req.user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ error: "Unauthorized to update this help offer" });
+      return errorResponse(res, "Help offer not found", 404);
     }
 
     const updatedHelpOffer = await prisma.helpOffer.update({
@@ -157,14 +150,16 @@ exports.updateHelpOffer = async (req, res) => {
       },
     });
 
-    res.status(200).json({
-      message: "Help offer updated successfullys",
-      helpOffer: updatedHelpOffer,
-    });
+    // res.status(200).json({
+    //   message: "Help offer updated successfullys",
+    //   helpOffer: updatedHelpOffer,
+    // });
+    successResponse(res, "Help offer updated successfully", updatedHelpOffer);
   } catch (error) {
-    res.status(500).json({
-      error: "Server error while updating help offer: " + error.message,
-    });
+    // res.status(500).json({
+    //   error: "Server error while updating help offer: " + error.message,
+    // });
+    errorResponse(res, "Server error while updating help offer", 500);
   }
 };
 
