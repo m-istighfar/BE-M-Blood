@@ -65,7 +65,6 @@ exports.getAllHelpOffers = async (req, res) => {
 exports.getHelpOfferById = async (req, res) => {
   try {
     const { helpOfferId } = req.params;
-
     const helpOffer = await prisma.helpOffer.findUnique({
       where: { OfferID: parseInt(helpOfferId) },
       include: {
@@ -75,14 +74,12 @@ exports.getHelpOfferById = async (req, res) => {
     });
 
     if (!helpOffer) {
-      return res.status(404).json({ error: "Help offer not found" });
+      return errorResponse(res, "Help offer not found", 404);
     }
 
-    res.status(200).json(helpOffer);
+    return successResponse(res, "Help offer fetched successfully", helpOffer);
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error fetching help offer: " + error.message });
+    return errorResponse(res, "Error fetching help offer", 500);
   }
 };
 
