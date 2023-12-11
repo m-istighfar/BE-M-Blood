@@ -150,15 +150,8 @@ exports.updateHelpOffer = async (req, res) => {
       },
     });
 
-    // res.status(200).json({
-    //   message: "Help offer updated successfullys",
-    //   helpOffer: updatedHelpOffer,
-    // });
     successResponse(res, "Help offer updated successfully", updatedHelpOffer);
   } catch (error) {
-    // res.status(500).json({
-    //   error: "Server error while updating help offer: " + error.message,
-    // });
     errorResponse(res, "Server error while updating help offer", 500);
   }
 };
