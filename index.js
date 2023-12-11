@@ -44,12 +44,7 @@ app.use(
   helpOfferRoutes
 );
 
-app.use(
-  "/blood-drive",
-  authMiddleware,
-  authorizationMiddleware(["user"]),
-  bloodDriveRoutes
-);
+app.use("/blood-drive", authMiddleware, bloodDriveRoutes);
 
 app.use(errorFormatter);
 

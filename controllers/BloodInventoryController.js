@@ -9,20 +9,12 @@ const errorResponse = (res, message, statusCode = 500) => {
   return res.status(statusCode).json({ error: message });
 };
 
-const validateInventoryData = ({
-  bloodTypeID,
-  quantity,
-  expiryDate,
-  provinceID,
-}) => {
-  if (!bloodTypeID || !quantity || !expiryDate || !provinceID) {
+const validateInventoryData = ({ bloodTypeID, quantity, provinceID }) => {
+  if (!bloodTypeID || !quantity || !provinceID) {
     return "Missing required fields";
   }
   if (quantity <= 0) {
     return "Quantity must be a positive number";
-  }
-  if (new Date(expiryDate) <= new Date()) {
-    return "Expiry date must be in the future";
   }
   return null;
 };
@@ -43,11 +35,15 @@ exports.createBloodInventory = async (req, res) => {
       return errorResponse(res, "Province not found", 404);
     }
 
+    const today = new Date();
+    const defaultExpiryDate = new Date(today);
+    defaultExpiryDate.setDate(today.getDate() + 42);
+
     const newInventory = await prisma.bloodInventory.create({
       data: {
         BloodTypeID: bloodTypeID,
         Quantity: quantity,
-        ExpiryDate: new Date(expiryDate),
+        ExpiryDate: defaultExpiryDate,
         ProvinceID: provinceID,
       },
     });
