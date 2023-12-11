@@ -3,18 +3,57 @@ const prisma = new PrismaClient();
 
 exports.getAllHelpOffers = async (req, res) => {
   try {
+    const {
+      page,
+      limit,
+      search,
+      bloodType,
+      willingToDonate,
+      canHelpInEmergency,
+    } = req.query;
+
+    const pageNumber = parseInt(page) || 1;
+    const pageSize = parseInt(limit) || 10;
+    const offset = (pageNumber - 1) * pageSize;
+
+    let whereClause = {};
+    if (search) {
+      whereClause.OR = [
+        { User: { Name: { contains: search } } },
+        { Reason: { contains: search } },
+        { Location: { contains: search } },
+      ];
+    }
+    if (bloodType) {
+      whereClause.BloodTypeID = parseInt(bloodType);
+    }
+    if (typeof willingToDonate === "boolean") {
+      whereClause.IsWillingToDonate = willingToDonate;
+    }
+    if (typeof canHelpInEmergency === "boolean") {
+      whereClause.CanHelpInEmergency = canHelpInEmergency;
+    }
+
     const helpOffers = await prisma.helpOffer.findMany({
+      skip: offset,
+      take: pageSize,
+      where: whereClause,
       include: {
-        User: { select: { Name: true, Province: true } },
+        User: true,
         BloodType: true,
       },
     });
 
-    if (helpOffers.length === 0) {
-      return res.status(404).json({ message: "No help offers found" });
-    }
+    const totalHelpOffers = await prisma.helpOffer.count({
+      where: whereClause,
+    });
 
-    res.status(200).json(helpOffers);
+    res.status(200).json({
+      total: totalHelpOffers,
+      totalPages: Math.ceil(totalHelpOffers / pageSize),
+      currentPage: pageNumber,
+      helpOffers,
+    });
   } catch (error) {
     res.status(500).json({
       error: "Server error while fetching help offers: " + error.message,
