@@ -103,6 +103,17 @@ exports.createHelpOffer = async (req, res) => {
       return errorResponse(res, validationError);
     }
 
+    const isValidLocation = await prisma.province.findFirst({
+      where: { Name: location },
+    });
+
+    if (!isValidLocation) {
+      return errorResponse(
+        res,
+        "Invalid location, must be within a valid province"
+      );
+    }
+
     const bloodTypeRecord = await prisma.bloodType.findFirst({
       where: { Type: bloodType },
     });
@@ -145,6 +156,17 @@ exports.updateHelpOffer = async (req, res) => {
 
     if (!existingHelpOffer) {
       return errorResponse(res, "Help offer not found", 404);
+    }
+
+    const isValidLocation = await prisma.province.findFirst({
+      where: { Name: location },
+    });
+
+    if (!isValidLocation) {
+      return errorResponse(
+        res,
+        "Invalid location, must be within a valid province"
+      );
     }
 
     const updatedHelpOffer = await prisma.helpOffer.update({
