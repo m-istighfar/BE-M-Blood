@@ -29,7 +29,7 @@ exports.createHelpOffer = async (req, res) => {
     ) {
       return res.status(400).json({
         error:
-          "isWillingToDonate and canHelpInEmergency fields must be boolean",
+          "isWillingToDonate and canHelpInEmergency must be boolean values",
       });
     }
 
@@ -37,18 +37,17 @@ exports.createHelpOffer = async (req, res) => {
       where: { Type: bloodType },
     });
     if (!bloodTypeRecord) {
-      return res.status(400).json({ error: "Invalid blood type" });
+      return res.status(400).json({ error: "Invalid blood type specified" });
     }
 
     const userWithProvince = await prisma.user.findUnique({
       where: { UserID: userId },
       include: { Province: true },
     });
-
-    if (!userWithProvince?.Province) {
+    if (!userWithProvince || !userWithProvince.Province) {
       return res
-        .status(400)
-        .json({ error: "User's province information is missing" });
+        .status(404)
+        .json({ error: "User or user's province information not found" });
     }
 
     const newHelpOffer = await prisma.helpOffer.create({
@@ -62,11 +61,14 @@ exports.createHelpOffer = async (req, res) => {
       },
     });
 
-    res
-      .status(201)
-      .json({ message: "Help offer created successfully", newHelpOffer });
+    res.status(201).json({
+      message: "Help offer created successfully",
+      helpOffer: newHelpOffer,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      error: "Server error while creating help offer: " + error.message,
+    });
   }
 };
 
