@@ -86,8 +86,13 @@ exports.getHelpOfferById = async (req, res) => {
 exports.createHelpOffer = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { bloodType, isWillingToDonate, canHelpInEmergency, reason } =
-      req.body;
+    const {
+      bloodType,
+      isWillingToDonate,
+      canHelpInEmergency,
+      reason,
+      location,
+    } = req.body;
 
     const validationError = validateHelpOfferData({
       bloodType,
@@ -112,6 +117,7 @@ exports.createHelpOffer = async (req, res) => {
         IsWillingToDonate: isWillingToDonate,
         CanHelpInEmergency: canHelpInEmergency,
         Reason: reason,
+        Location: location,
       },
     });
 
@@ -121,6 +127,7 @@ exports.createHelpOffer = async (req, res) => {
       newHelpOffer
     );
   } catch (error) {
+    console.error("Error creating help offer:", error);
     return errorResponse(res, "Error creating help offer", 500);
   }
 };
@@ -129,7 +136,8 @@ exports.updateHelpOffer = async (req, res) => {
   try {
     const { helpOfferId } = req.params;
     const userId = req.user.id;
-    const { isWillingToDonate, canHelpInEmergency, reason } = req.body;
+    const { isWillingToDonate, canHelpInEmergency, reason, location } =
+      req.body;
 
     const existingHelpOffer = await prisma.helpOffer.findUnique({
       where: { OfferID: parseInt(helpOfferId) },
@@ -147,6 +155,7 @@ exports.updateHelpOffer = async (req, res) => {
         CanHelpInEmergency:
           canHelpInEmergency ?? existingHelpOffer.CanHelpInEmergency,
         Reason: reason ?? existingHelpOffer.Reason,
+        Location: location ?? existingHelpOffer.Location,
       },
     });
 
