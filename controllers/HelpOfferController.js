@@ -110,7 +110,7 @@ exports.updateHelpOffer = async (req, res) => {
     });
 
     res.status(200).json({
-      message: "Help offer updated successfully",
+      message: "Help offer updated successfullys",
       helpOffer: updatedHelpOffer,
     });
   } catch (error) {
