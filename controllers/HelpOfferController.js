@@ -26,8 +26,15 @@ const validateHelpOfferData = (data) => {
 
 exports.getAllHelpOffers = async (req, res) => {
   try {
-    const { page, limit, bloodType, isWillingToDonate, canHelpInEmergency } =
-      req.query;
+    const {
+      page,
+      limit,
+      bloodType,
+      isWillingToDonate,
+      canHelpInEmergency,
+      location,
+      sort,
+    } = req.query;
 
     const pageNumber = parseInt(page) || 1;
     const pageSize = parseInt(limit) || 10;
@@ -38,11 +45,26 @@ exports.getAllHelpOffers = async (req, res) => {
       whereClause.IsWillingToDonate = isWillingToDonate === "true";
     if (canHelpInEmergency)
       whereClause.CanHelpInEmergency = canHelpInEmergency === "true";
+    if (location) whereClause.Location = { contains: location };
+
+    let orderBy = { CreatedAt: "desc" }; // Default sorting by CreatedAt
+
+    if (sort) {
+      const allowedSortFields = ["CreatedAt", "UpdatedAt"]; // Add more fields if needed
+      const [sortField, sortOrder] = sort.split(":");
+
+      if (allowedSortFields.includes(sortField)) {
+        orderBy = {
+          [sortField]: sortOrder.toLowerCase() === "asc" ? "asc" : "desc",
+        };
+      }
+    }
 
     const helpOffers = await prisma.helpOffer.findMany({
       skip: (pageNumber - 1) * pageSize,
       take: pageSize,
       where: whereClause,
+      orderBy: orderBy,
       include: {
         User: true,
         BloodType: true,
@@ -50,18 +72,19 @@ exports.getAllHelpOffers = async (req, res) => {
     });
 
     const totalRecords = await prisma.helpOffer.count({ where: whereClause });
+    const totalPages = Math.ceil(totalRecords / pageSize);
 
     return successResponse(res, "Help offers fetched successfully", {
       totalRecords,
       helpOffers,
       currentPage: pageNumber,
-      totalPages: Math.ceil(totalRecords / pageSize),
+      totalPages,
     });
   } catch (error) {
+    console.error(error);
     return errorResponse(res, "Error fetching help offers", 500);
   }
 };
-
 exports.getHelpOfferById = async (req, res) => {
   try {
     const { helpOfferId } = req.params;
