@@ -93,3 +93,19 @@ exports.updateHelpOffer = async (req, res) => {
       .json({ error: "Error updating help offer: " + error.message });
   }
 };
+
+exports.deleteHelpOffer = async (req, res) => {
+  try {
+    const { helpOfferId } = req.params;
+
+    await prisma.helpOffer.delete({
+      where: { OfferID: parseInt(helpOfferId) },
+    });
+
+    res.status(200).json({ message: "Help offer deleted successfully" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Error deleting help offer: " + error.message });
+  }
+};
