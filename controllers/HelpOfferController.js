@@ -4,34 +4,34 @@ const prisma = new PrismaClient();
 exports.getAllHelpOffers = async (req, res) => {
   try {
     const {
-      page,
-      limit,
-      search,
+      page = 1,
+      limit = 10,
+      search = "",
       bloodType,
-      willingToDonate,
+      isWillingToDonate,
       canHelpInEmergency,
     } = req.query;
 
-    const pageNumber = parseInt(page) || 1;
-    const pageSize = parseInt(limit) || 10;
+    const pageNumber = parseInt(page);
+    const pageSize = parseInt(limit);
     const offset = (pageNumber - 1) * pageSize;
 
-    let whereClause = {};
-    if (search) {
-      whereClause.OR = [
+    let whereClause = {
+      OR: [
         { User: { Name: { contains: search } } },
-        { Reason: { contains: search } },
         { Location: { contains: search } },
-      ];
-    }
+        { Reason: { contains: search } },
+      ],
+    };
+
     if (bloodType) {
       whereClause.BloodTypeID = parseInt(bloodType);
     }
-    if (typeof willingToDonate === "boolean") {
-      whereClause.IsWillingToDonate = willingToDonate;
+    if (isWillingToDonate !== undefined) {
+      whereClause.IsWillingToDonate = isWillingToDonate === "true";
     }
-    if (typeof canHelpInEmergency === "boolean") {
-      whereClause.CanHelpInEmergency = canHelpInEmergency;
+    if (canHelpInEmergency !== undefined) {
+      whereClause.CanHelpInEmergency = canHelpInEmergency === "true";
     }
 
     const helpOffers = await prisma.helpOffer.findMany({
@@ -44,20 +44,18 @@ exports.getAllHelpOffers = async (req, res) => {
       },
     });
 
-    const totalHelpOffers = await prisma.helpOffer.count({
-      where: whereClause,
-    });
+    const totalRecords = await prisma.helpOffer.count({ where: whereClause });
 
     res.status(200).json({
-      total: totalHelpOffers,
-      totalPages: Math.ceil(totalHelpOffers / pageSize),
+      totalRecords,
+      totalPages: Math.ceil(totalRecords / pageSize),
       currentPage: pageNumber,
       helpOffers,
     });
   } catch (error) {
-    res.status(500).json({
-      error: "Server error while fetching help offers: " + error.message,
-    });
+    res
+      .status(500)
+      .json({ error: "Error fetching help offers: " + error.message });
   }
 };
 
