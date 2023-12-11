@@ -69,3 +69,27 @@ exports.createHelpOffer = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.updateHelpOffer = async (req, res) => {
+  try {
+    const { helpOfferId } = req.params;
+    const { isWillingToDonate, canHelpInEmergency, reason } = req.body;
+
+    const updatedHelpOffer = await prisma.helpOffer.update({
+      where: { OfferID: parseInt(helpOfferId) },
+      data: {
+        IsWillingToDonate: isWillingToDonate,
+        CanHelpInEmergency: canHelpInEmergency,
+        Reason: reason,
+      },
+    });
+
+    res
+      .status(200)
+      .json({ message: "Help offer updated successfully", updatedHelpOffer });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Error updating help offer: " + error.message });
+  }
+};
