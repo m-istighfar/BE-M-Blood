@@ -150,9 +150,17 @@ exports.updateHelpOffer = async (req, res) => {
       },
     });
 
-    successResponse(res, "Help offer updated successfully", updatedHelpOffer);
+    return successResponse(
+      res,
+      "Help offer updated successfully",
+      updatedHelpOffer
+    );
   } catch (error) {
-    errorResponse(res, "Error updating help offer: " + error.message, 500);
+    return errorResponse(
+      res,
+      "Error updating help offer: " + error.message,
+      500
+    );
   }
 };
 
@@ -173,8 +181,12 @@ exports.deleteHelpOffer = async (req, res) => {
       where: { OfferID: parseInt(helpOfferId) },
     });
 
-    successResponse(res, "Help offer deleted successfully");
+    return successResponse(res, "Help offer deleted successfully");
   } catch (error) {
-    errorResponse(res, "Error deleting help offer: " + error.message, 500);
+    return errorResponse(
+      res,
+      "Error deleting help offer: " + error.message,
+      500
+    );
   }
 };
