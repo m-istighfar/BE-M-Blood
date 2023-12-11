@@ -3,5 +3,8 @@ const router = express.Router();
 const HelpOfferController = require("../controllers/HelpOfferController");
 
 router.post("/offer", HelpOfferController.createHelpOffer);
+router.get("/", HelpOfferController.getAllHelpOffers);
+router.put("/:helpOfferId", HelpOfferController.updateHelpOffer);
+router.delete("/:helpOfferId", HelpOfferController.deleteHelpOffer);
 
 module.exports = router;
