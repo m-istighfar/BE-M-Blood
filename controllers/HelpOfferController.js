@@ -9,13 +9,11 @@ const errorResponse = (res, message, statusCode = 400) => {
   return res.status(statusCode).json({ error: message });
 };
 
-const validateHelpOfferData = ({
-  bloodTypeID,
-  isWillingToDonate,
-  canHelpInEmergency,
-}) => {
-  if (!bloodTypeID) {
-    return "Blood type ID is required";
+const validateHelpOfferData = (data) => {
+  const { bloodType, isWillingToDonate, canHelpInEmergency } = data;
+
+  if (!bloodType) {
+    return "Blood type is required";
   }
   if (typeof isWillingToDonate !== "boolean") {
     return "isWillingToDonate must be a boolean";
@@ -120,14 +118,14 @@ exports.createHelpOffer = async (req, res) => {
       canHelpInEmergency,
     });
     if (validationError) {
-      return errorResponse(res, validationError, 400);
+      return errorResponse(res, validationError);
     }
 
     const bloodTypeRecord = await prisma.bloodType.findFirst({
       where: { Type: bloodType },
     });
     if (!bloodTypeRecord) {
-      return errorResponse(res, "Invalid blood type", 400);
+      return errorResponse(res, "Invalid blood type");
     }
 
     const newHelpOffer = await prisma.helpOffer.create({
@@ -146,10 +144,7 @@ exports.createHelpOffer = async (req, res) => {
       newHelpOffer
     );
   } catch (error) {
-    return errorResponse(
-      res,
-      "Server error while creating help offer: " + error.message
-    );
+    return errorResponse(res, "Error creating help offer", 500);
   }
 };
 
