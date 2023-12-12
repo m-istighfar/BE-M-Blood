@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const Joi = require("joi");
 
 const successResponse = (res, message, data = null) => {
   return res.status(200).json({ message, data });
@@ -10,18 +11,35 @@ const errorResponse = (res, message, statusCode = 400) => {
 };
 
 const validateHelpOfferData = (data) => {
-  const { bloodType, isWillingToDonate, canHelpInEmergency } = data;
+  const schema = Joi.object({
+    bloodType: Joi.string().required(),
+    isWillingToDonate: Joi.boolean().required(),
+    canHelpInEmergency: Joi.boolean().required(),
+    location: Joi.string().optional(),
+    reason: Joi.string().optional(),
+  });
 
-  if (!bloodType) {
-    return "Blood type is required";
-  }
-  if (typeof isWillingToDonate !== "boolean") {
-    return "isWillingToDonate must be a boolean";
-  }
-  if (typeof canHelpInEmergency !== "boolean") {
-    return "canHelpInEmergency must be a boolean";
-  }
-  return null;
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
+
+const validateQueryParameters = (data) => {
+  const schema = Joi.object({
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).optional(),
+    bloodType: Joi.string().optional(),
+    isWillingToDonate: Joi.boolean().optional(),
+    canHelpInEmergency: Joi.boolean().optional(),
+    location: Joi.string().optional(),
+    sort: Joi.string().optional(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
 };
 
 exports.getAllHelpOffers = async (req, res) => {
@@ -35,6 +53,11 @@ exports.getAllHelpOffers = async (req, res) => {
       location,
       sort,
     } = req.query;
+
+    const validationError = validateQueryParameters(req.query);
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
 
     const pageNumber = parseInt(page) || 1;
     const pageSize = parseInt(limit) || 10;
@@ -117,11 +140,7 @@ exports.createHelpOffer = async (req, res) => {
       location,
     } = req.body;
 
-    const validationError = validateHelpOfferData({
-      bloodType,
-      isWillingToDonate,
-      canHelpInEmergency,
-    });
+    const validationError = validateHelpOfferData(req.body);
     if (validationError) {
       return errorResponse(res, validationError);
     }
@@ -172,6 +191,11 @@ exports.updateHelpOffer = async (req, res) => {
     const userId = req.user.id;
     const { isWillingToDonate, canHelpInEmergency, reason, location } =
       req.body;
+
+    const validationError = validateHelpOfferData(req.body);
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
 
     const existingHelpOffer = await prisma.helpOffer.findUnique({
       where: { OfferID: parseInt(helpOfferId) },

@@ -1311,6 +1311,7 @@ module.exports = router;
 // BloodInventoryController.js
 
 const { PrismaClient } = require("@prisma/client");
+const Joi = require("joi");
 const prisma = new PrismaClient();
 
 const successResponse = (res, message, data) => {
@@ -1321,24 +1322,54 @@ const errorResponse = (res, message, statusCode = 500) => {
   return res.status(statusCode).json({ error: message });
 };
 
-const validateInventoryData = ({ bloodTypeID, quantity, provinceID }) => {
-  if (!bloodTypeID || !quantity || !provinceID) {
-    return "Missing required fields";
-  }
-  if (quantity <= 0) {
-    return "Quantity must be a positive number";
-  }
-  return null;
+const validateInventoryData = (data) => {
+  const schema = Joi.object({
+    bloodTypeID: Joi.number().required(),
+    quantity: Joi.number().positive().required(),
+    provinceID: Joi.number().required(),
+    expiryDate: Joi.date().optional(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
+
+const validateQueryParameters = (data) => {
+  const schema = Joi.object({
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).optional(),
+    bloodTypeID: Joi.number().integer().optional(),
+    provinceID: Joi.number().integer().optional(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
+
+const validateInventoryUpdate = (data) => {
+  const schema = Joi.object({
+    quantity: Joi.number().positive().optional(),
+    expiryDate: Joi.date().optional(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
 };
 
 exports.createBloodInventory = async (req, res) => {
   try {
-    const { bloodTypeID, quantity, expiryDate, provinceID } = req.body;
-
     const validationError = validateInventoryData(req.body);
     if (validationError) {
       return errorResponse(res, validationError, 400);
     }
+
+    const { bloodTypeID, quantity, expiryDate, provinceID } = req.body;
 
     const province = await prisma.province.findUnique({
       where: { ProvinceID: provinceID },
@@ -1348,8 +1379,9 @@ exports.createBloodInventory = async (req, res) => {
     }
 
     const today = new Date();
-    const defaultExpiryDate = new Date(today);
-    defaultExpiryDate.setDate(today.getDate() + 42);
+    const defaultExpiryDate = expiryDate
+      ? new Date(expiryDate)
+      : new Date(today.getFullYear(), today.getMonth(), today.getDate() + 42);
 
     const newInventory = await prisma.bloodInventory.create({
       data: {
@@ -1368,10 +1400,14 @@ exports.createBloodInventory = async (req, res) => {
 
 exports.getBloodInventories = async (req, res) => {
   try {
-    const { page, limit, bloodTypeID, provinceID } = req.query;
-    const pageNumber = Math.max(parseInt(page) || 1, 1);
+    const validationError = validateQueryParameters(req.query);
+    if (validationError) {
+      return errorResponse(res, validationError, 400);
+    }
 
-    const pageSize = Math.max(parseInt(limit) || 10, 1);
+    const { page, limit, bloodTypeID, provinceID } = req.query;
+    const pageNumber = parseInt(page) || 1;
+    const pageSize = parseInt(limit) || 10;
     const offset = (pageNumber - 1) * pageSize;
 
     let whereClause = {};
@@ -1420,9 +1456,15 @@ exports.getBloodInventoryById = async (req, res) => {
 
 exports.updateBloodInventory = async (req, res) => {
   const { inventoryID } = req.params;
-  const { quantity, expiryDate } = req.body;
 
   try {
+    const validationError = validateInventoryUpdate(req.body);
+    if (validationError) {
+      return errorResponse(res, validationError, 400);
+    }
+
+    const { quantity, expiryDate } = req.body;
+
     const existingInventory = await prisma.bloodInventory.findUnique({
       where: { InventoryID: parseInt(inventoryID) },
     });
@@ -1466,6 +1508,7 @@ exports.deleteBloodInventory = async (req, res) => {
     errorResponse(res, "Error deleting blood inventory: " + error.message);
   }
 };
+
 
 // helpOfferRoutes.js
 
