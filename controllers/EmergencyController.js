@@ -52,6 +52,19 @@ const validateUpdateEmergencyRequest = (data) => {
     : null;
 };
 
+const validateUpdateEmergencyRequestStatus = (data) => {
+  const schema = Joi.object({
+    newStatus: Joi.string()
+      .valid("pending", "inProgress", "fulfilled", "expired", "cancelled")
+      .required(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
+
 exports.getAllEmergencyRequests = async (req, res) => {
   try {
     const validationError = validateEmergencyRequestQuery(req.query);
@@ -294,6 +307,53 @@ exports.deleteEmergencyRequest = async (req, res) => {
     errorResponse(
       res,
       "Error deleting emergency request: " + error.message,
+      500
+    );
+  }
+};
+
+exports.updateEmergencyRequestStatus = async (req, res) => {
+  try {
+    const { emergencyRequestId } = req.params;
+    const { newStatus } = req.body;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const validationError = validateUpdateEmergencyRequestStatus(req.body);
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
+
+    const emergencyRequest = await prisma.emergencyRequest.findUnique({
+      where: { RequestID: parseInt(emergencyRequestId) },
+    });
+
+    if (!emergencyRequest) {
+      return errorResponse(res, "Emergency request not found", 404);
+    }
+
+    if (emergencyRequest.UserID !== userId && userRole !== "admin") {
+      return errorResponse(
+        res,
+        "Unauthorized to update this emergency request",
+        403
+      );
+    }
+
+    const updatedEmergencyRequest = await prisma.emergencyRequest.update({
+      where: { RequestID: parseInt(emergencyRequestId) },
+      data: { Status: newStatus },
+    });
+
+    return successResponse(
+      res,
+      "Emergency request status updated successfully",
+      updatedEmergencyRequest
+    );
+  } catch (error) {
+    return errorResponse(
+      res,
+      "Error updating emergency request status: " + error.message,
       500
     );
   }
