@@ -28,6 +28,7 @@
     "faker": "^5.5.3",
     "firebase-functions": "^4.4.1",
     "helmet": "^7.0.0",
+    "joi": "^17.11.0",
     "jsonwebtoken": "^9.0.1",
     "memory-cache": "^0.2.0",
     "mongoose": "^7.4.5",
