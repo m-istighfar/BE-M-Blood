@@ -11,7 +11,7 @@ router.post("/cancel", AppointmentController.cancelAppointment);
 
 router.post(
   "/complete",
-  authorizationMiddleware(["admin"]),
+  authorizationMiddleware(["admin", "user"]),
   AppointmentController.completeAppointment
 );
 
