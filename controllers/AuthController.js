@@ -4,6 +4,7 @@ const crypto = require("crypto");
 require("dotenv").config();
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const Joi = require("joi");
 const { sendVerificationEmail } = require("../services/mailService");
 
 const {
@@ -25,8 +26,43 @@ const errorResponse = (res, message, statusCode = 400) => {
   return res.status(statusCode).json({ error: message });
 };
 
+const validateRegistration = (data) => {
+  const schema = Joi.object({
+    username: Joi.string().required(),
+    email: Joi.string().email().required(),
+    password: Joi.string().required(),
+    name: Joi.string().required(),
+    phone: Joi.string().required(),
+    role: Joi.string().optional(),
+    provinceId: Joi.number().integer().required(),
+    additionalInfo: Joi.string().optional(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
+
+const validateLogin = (data) => {
+  const schema = Joi.object({
+    username: Joi.string().required(),
+    password: Joi.string().required(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
+
 const register = async (req, res) => {
   try {
+    const validationError = validateRegistration(req.body);
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
+
     const {
       username,
       email,
@@ -86,19 +122,19 @@ const register = async (req, res) => {
 
     await sendVerificationEmail(email, verificationToken);
 
-    return successResponse(res, "User successfully registered", {
+    successResponse(res, "User successfully registered", {
       userId: newUser.UserID,
       username,
       email,
     });
   } catch (error) {
-    return errorResponse(res, error.message);
+    errorResponse(res, error.message);
   }
 };
 
 const verifyEmail = async (req, res) => {
-  const { token } = req.params;
   try {
+    const { token } = req.params;
     const userAuth = await prisma.userAuth.findUnique({
       where: { VerificationToken: token },
     });
@@ -111,14 +147,19 @@ const verifyEmail = async (req, res) => {
       data: { Verified: true, VerificationToken: null },
     });
 
-    return successResponse(res, "Email verified successfully!");
+    successResponse(res, "Email verified successfully!");
   } catch (error) {
-    return errorResponse(res, error.message);
+    errorResponse(res, error.message);
   }
 };
 
 const login = async (req, res) => {
   try {
+    const validationError = validateLogin(req.body);
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
+
     const { username, password } = req.body;
 
     const userAuth = await prisma.userAuth.findUnique({
@@ -160,7 +201,7 @@ const login = async (req, res) => {
       { expiresIn: REFRESH_TOKEN_EXPIRATION }
     );
 
-    return successResponse(res, "Login successful", {
+    successResponse(res, "Login successful", {
       userId: userAuth.UserAuthID,
       accessToken,
       refreshToken,
@@ -169,7 +210,7 @@ const login = async (req, res) => {
       role: userAuth.Role,
     });
   } catch (error) {
-    return errorResponse(res, error.message);
+    errorResponse(res, error.message);
   }
 };
 

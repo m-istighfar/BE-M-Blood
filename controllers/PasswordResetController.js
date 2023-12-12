@@ -6,11 +6,7 @@ const Joi = require("joi");
 const { sendPasswordResetEmail } = require("../services/mailService");
 
 const successResponse = (res, message, data = null, statusCode = 200) => {
-  const response = { message };
-  if (data !== null) {
-    response.data = data;
-  }
-  return res.status(statusCode).json(response);
+  return res.status(statusCode).json(data ? { message, data } : { message });
 };
 
 const errorResponse = (res, message, statusCode = 400) => {
@@ -29,9 +25,9 @@ const validatePassword = (password) => {
 
 const requestPasswordReset = async (req, res) => {
   const { email } = req.body;
-  const { error } = validateEmail(email);
-  if (error) {
-    return errorResponse(res, error.details[0].message);
+  const validationResult = validateEmail(email);
+  if (validationResult.error) {
+    return errorResponse(res, "Invalid email format");
   }
 
   const userAuth = await prisma.userAuth.findUnique({
@@ -59,9 +55,7 @@ const requestPasswordReset = async (req, res) => {
   );
 
   if (!success) {
-    return errorResponse(res, "Failed to send reset email.", 500, {
-      details: mailError,
-    });
+    return errorResponse(res, "Failed to send reset email.", 500);
   }
 
   return successResponse(res, "Password reset email sent.");
@@ -71,9 +65,9 @@ const resetPassword = async (req, res) => {
   const { resetToken } = req.params;
   const { newPassword } = req.body;
 
-  const { error } = validatePassword(newPassword);
-  if (error) {
-    return errorResponse(res, error.details[0].message);
+  const validationResult = validatePassword(newPassword);
+  if (validationResult.error) {
+    return errorResponse(res, "Invalid password format");
   }
 
   const userAuth = await prisma.userAuth.findFirst({
@@ -106,7 +100,7 @@ const resetPassword = async (req, res) => {
 
     return successResponse(res, "Password successfully reset.");
   } catch (error) {
-    return errorResponse(res, error.message);
+    return errorResponse(res, "Error resetting the password");
   }
 };
 
