@@ -8,4 +8,10 @@ router.get("/:bloodDriveId", BloodDriveController.getBloodDriveById);
 router.put("/:bloodDriveId", BloodDriveController.updateBloodDrive);
 router.delete("/:bloodDriveId", BloodDriveController.deleteBloodDrive);
 
+// router.post(
+//   "/:bloodDriveId/volunteer",
+//   authenticationMiddleware,
+//   BloodDriveController.registerVolunteer
+// );
+
 module.exports = router;

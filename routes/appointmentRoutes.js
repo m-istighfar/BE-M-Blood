@@ -15,4 +15,10 @@ router.post(
   AppointmentController.completeAppointment
 );
 
+// router.post(
+//   "/remind",
+//   authorizationMiddleware(["admin"]),
+//   AppointmentController.sendAppointmentReminders
+// ); NANTI
+
 module.exports = router;

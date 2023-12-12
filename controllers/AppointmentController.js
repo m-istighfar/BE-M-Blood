@@ -35,6 +35,7 @@ const validateCreateAppointment = (data) => {
   const schema = Joi.object({
     bloodType: Joi.string().required(),
     scheduledDate: Joi.date().min("now").required(),
+    location: Joi.string().optional(),
   });
 
   const { error } = schema.validate(data, { abortEarly: false });
@@ -167,7 +168,7 @@ exports.getAppointmentById = async (req, res) => {
 exports.createAppointment = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { bloodType, scheduledDate } = req.body;
+    const { bloodType, scheduledDate, location } = req.body;
 
     const validationError = validateCreateAppointment(req.body);
     if (validationError) {
@@ -190,6 +191,25 @@ exports.createAppointment = async (req, res) => {
 
     if (!userWithProvince?.Province) {
       return errorResponse(res, "User does not have a province");
+    }
+
+    const userProvince = userWithProvince.Province;
+
+    if (
+      location &&
+      location.toLowerCase() !== userProvince.Capital.toLowerCase()
+    ) {
+      const provinceLocations = await prisma.province.findUnique({
+        where: { ProvinceID: userProvince.ProvinceID },
+        include: { Users: { select: { Name: true } } },
+      });
+
+      const provinceUserNames = provinceLocations.Users.map((user) =>
+        user.Name.toLowerCase()
+      );
+      if (!provinceUserNames.includes(location.toLowerCase())) {
+        return errorResponse(res, "Invalid location");
+      }
     }
 
     const bloodTypeRecord = await prisma.bloodType.findFirst({
@@ -220,7 +240,7 @@ exports.createAppointment = async (req, res) => {
         UserID: userId,
         BloodTypeID: bloodTypeRecord.BloodTypeID,
         ScheduledDate: appointmentDate,
-        Location: userWithProvince.Province.Capital,
+        Location: location || userProvince.Capital,
       },
     });
 
