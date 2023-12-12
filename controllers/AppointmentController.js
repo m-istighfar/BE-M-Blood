@@ -170,6 +170,11 @@ exports.createAppointment = async (req, res) => {
     const userId = req.user.id;
     const { bloodType, scheduledDate } = req.body;
 
+    const validationError = validateCreateAppointment(req.body);
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
+
     if (!scheduledDate || isNaN(new Date(scheduledDate).getTime())) {
       return res.status(400).json({ error: "Invalid scheduled date" });
     }
