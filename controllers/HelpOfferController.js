@@ -47,10 +47,10 @@ exports.getAllHelpOffers = async (req, res) => {
       whereClause.CanHelpInEmergency = canHelpInEmergency === "true";
     if (location) whereClause.Location = { contains: location };
 
-    let orderBy = { CreatedAt: "desc" }; // Default sorting by CreatedAt
+    let orderBy = { CreatedAt: "desc" };
 
     if (sort) {
-      const allowedSortFields = ["CreatedAt", "UpdatedAt"]; // Add more fields if needed
+      const allowedSortFields = ["CreatedAt", "UpdatedAt"];
       const [sortField, sortOrder] = sort.split(":");
 
       if (allowedSortFields.includes(sortField)) {
