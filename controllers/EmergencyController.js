@@ -52,7 +52,6 @@ const validateUpdateEmergencyRequest = (data) => {
     : null;
 };
 
-// getAllEmergencyRequests endpoint
 exports.getAllEmergencyRequests = async (req, res) => {
   try {
     const validationError = validateEmergencyRequestQuery(req.query);
@@ -117,7 +116,6 @@ exports.getAllEmergencyRequests = async (req, res) => {
   }
 };
 
-// getEmergencyRequestById endpoint
 exports.getEmergencyRequestById = async (req, res) => {
   try {
     const { emergencyRequestId } = req.params;
@@ -148,7 +146,6 @@ exports.getEmergencyRequestById = async (req, res) => {
   }
 };
 
-// createEmergencyRequest endpoint
 exports.createEmergencyRequest = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -216,7 +213,6 @@ exports.createEmergencyRequest = async (req, res) => {
   }
 };
 
-// updateEmergencyRequest endpoint
 exports.updateEmergencyRequest = async (req, res) => {
   try {
     const { emergencyRequestId } = req.params;
@@ -267,7 +263,6 @@ exports.updateEmergencyRequest = async (req, res) => {
   }
 };
 
-// deleteEmergencyRequest endpoint
 exports.deleteEmergencyRequest = async (req, res) => {
   try {
     const { emergencyRequestId } = req.params;
