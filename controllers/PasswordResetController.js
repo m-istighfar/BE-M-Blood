@@ -23,7 +23,7 @@ const validateEmail = (email) => {
 };
 
 const validatePassword = (password) => {
-  const schema = Joi.string().min(6).required(); // Adjust the password policy as needed
+  const schema = Joi.string().min(6).required();
   return schema.validate(password);
 };
 
@@ -43,7 +43,7 @@ const requestPasswordReset = async (req, res) => {
   }
 
   const resetToken = crypto.randomBytes(20).toString("hex");
-  const resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour from now
+  const resetPasswordExpires = new Date(Date.now() + 3600000);
 
   await prisma.userAuth.update({
     where: { UserAuthID: userAuth.UserAuthID },
