@@ -20,6 +20,9 @@ const validateEmergencyRequestQuery = (data) => {
     provinceId: Joi.number().integer().optional(),
     sortBy: Joi.string().optional(),
     sortOrder: Joi.string().valid("asc", "desc").optional(),
+    status: Joi.string()
+      .valid("pending", "inProgress", "fulfilled", "expired", "cancelled")
+      .optional(),
   });
 
   const { error } = schema.validate(data, { abortEarly: false });
@@ -67,11 +70,6 @@ const validateUpdateEmergencyRequestStatus = (data) => {
 
 exports.getAllEmergencyRequests = async (req, res) => {
   try {
-    const validationError = validateEmergencyRequestQuery(req.query);
-    if (validationError) {
-      return errorResponse(res, validationError);
-    }
-
     const {
       page,
       limit,
@@ -79,9 +77,17 @@ exports.getAllEmergencyRequests = async (req, res) => {
       startDate,
       endDate,
       provinceId,
+      status,
       sortBy,
       sortOrder,
     } = req.query;
+
+    console.log(req.query);
+
+    const validationError = validateEmergencyRequestQuery(req.query);
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
 
     const pageNumber = parseInt(page) || 1;
     const pageSize = parseInt(limit) || 10;
@@ -98,6 +104,7 @@ exports.getAllEmergencyRequests = async (req, res) => {
       };
     }
     if (provinceId) whereClause.User = { ProvinceID: parseInt(provinceId) };
+    if (status) whereClause.Status = status;
 
     const emergencyRequests = await prisma.emergencyRequest.findMany({
       skip: offset,
