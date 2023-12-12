@@ -282,14 +282,14 @@ exports.deleteHelpOffer = async (req, res) => {
     });
 
     if (!helpOffer) {
-      errorResponse(res, "Help offer not found", 404);
+      return errorResponse(res, "Help offer not found", 404);
     }
 
     await prisma.helpOffer.delete({
       where: { OfferID: parseInt(helpOfferId) },
     });
 
-    return successResponse(res, "Help offer deleted successfully");
+    return successResponse(res, "Help offer deleted successfully", helpOffer);
   } catch (error) {
     return errorResponse(
       res,
