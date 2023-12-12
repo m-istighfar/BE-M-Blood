@@ -1,6 +1,57 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const joi = require("joi");
+const Joi = require("joi");
+
+const successResponse = (res, message, data = null, statusCode = 200) => {
+  return res.status(statusCode).json(data ? { message, data } : { message });
+};
+
+const errorResponse = (res, message, statusCode = 400) => {
+  return res.status(statusCode).json({ error: message });
+};
+
+const validateAppointmentQuery = (data) => {
+  const schema = Joi.object({
+    status: Joi.string()
+      .valid("scheduled", "completed", "cancelled", "rescheduled")
+      .optional(),
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+    userId: Joi.number().integer().optional(),
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).optional(),
+    sortBy: Joi.string().optional(),
+    sortOrder: Joi.string().valid("asc", "desc").optional(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
+
+const validateCreateAppointment = (data) => {
+  const schema = Joi.object({
+    bloodType: Joi.string().required(),
+    scheduledDate: Joi.date().min("now").required(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
+
+const validateRescheduleAppointment = (data) => {
+  const schema = Joi.object({
+    newScheduledDate: Joi.date().min("now").required(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
 
 exports.getAppointments = async (req, res) => {
   try {
@@ -16,6 +67,11 @@ exports.getAppointments = async (req, res) => {
       sortBy,
       sortOrder,
     } = req.query;
+
+    const validationError = validateAppointmentQuery(req.query);
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
 
     const pageNumber = parseInt(page) || 1;
     const pageSize = parseInt(limit) || 10;
