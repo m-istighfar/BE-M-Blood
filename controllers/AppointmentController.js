@@ -374,6 +374,8 @@ exports.completeAppointment = async (req, res) => {
       where: { AppointmentID: appointmentId },
     });
 
+    console.log(appointment);
+
     if (!appointment) {
       return errorResponse(res, "Appointment not found");
     }

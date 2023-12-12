@@ -80,6 +80,7 @@ model EmergencyRequest {
   BloodType       BloodType     @relation(fields: [BloodTypeID], references: [BloodTypeID])
   RequestDate     DateTime
   Location        String
+  Status          EmergencyRequestStatus @default(pending)
   AdditionalInfo  String?
   CreatedAt       DateTime      @default(now())
   UpdatedAt       DateTime      @updatedAt
@@ -136,4 +137,12 @@ enum AppointmentStatus {
   completed
   cancelled
   rescheduled
+}
+
+enum EmergencyRequestStatus {
+  pending
+  inProgress
+  fulfilled
+  expired
+  cancelled
 }
