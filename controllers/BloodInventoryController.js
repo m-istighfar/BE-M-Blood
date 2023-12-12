@@ -66,6 +66,13 @@ exports.createBloodInventory = async (req, res) => {
       return errorResponse(res, "Province not found", 404);
     }
 
+    const bloodTypeExists = await prisma.bloodType.findUnique({
+      where: { BloodTypeID: bloodTypeID },
+    });
+    if (!bloodTypeExists) {
+      return errorResponse(res, "Blood type not found", 404);
+    }
+
     const today = new Date();
     const defaultExpiryDate = expiryDate
       ? new Date(expiryDate)
