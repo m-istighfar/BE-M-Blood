@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const e = require("express");
 const prisma = new PrismaClient();
 const Joi = require("joi");
 
@@ -44,6 +45,7 @@ const validateCreateAppointment = (data) => {
 
 const validateRescheduleAppointment = (data) => {
   const schema = Joi.object({
+    appointmentId: Joi.number().integer().required(),
     newScheduledDate: Joi.date().min("now").required(),
   });
 
@@ -79,16 +81,6 @@ exports.getAppointments = async (req, res) => {
     const sortingCriteria = sortBy || "ScheduledDate";
     const sortingOrder = sortOrder === "desc" ? "desc" : "asc";
 
-    const validStatuses = [
-      "scheduled",
-      "completed",
-      "cancelled",
-      "rescheduled",
-    ];
-    if (status && !validStatuses.includes(status)) {
-      return res.status(400).json({ error: "Invalid appointment status" });
-    }
-
     let queryOptions = {
       skip: offset,
       take: pageSize,
@@ -122,16 +114,18 @@ exports.getAppointments = async (req, res) => {
       where: queryOptions.where,
     });
 
-    res.status(200).json({
+    successResponse(res, "Appointments fetched successfully", {
       totalRecords,
-      totalPages: Math.ceil(totalRecords / pageSize),
-      currentPage: pageNumber,
       appointments,
+      currentPage: pageNumber,
+      totalPages: Math.ceil(totalRecords / pageSize),
     });
   } catch (error) {
-    res.status(500).json({
-      error: "An error occurred while fetching appointments: " + error.message,
-    });
+    errorResponse(
+      res,
+      "An error occurred while fetching appointments: " + error.message,
+      500
+    );
   }
 };
 
@@ -149,19 +143,24 @@ exports.getAppointmentById = async (req, res) => {
     });
 
     if (!appointment) {
-      return res.status(404).json({ error: "Appointment not found" });
+      return errorResponse(res, "Appointment not found", 404);
     }
 
     if (userRole !== "admin" && appointment.UserID !== userId) {
-      return res.status(403).json({ error: "Access denied" });
+      return errorResponse(res, "Unauthorized", 401);
     }
 
-    res.status(200).json(appointment);
+    return successResponse(
+      res,
+      "Appointment fetched successfully",
+      appointment
+    );
   } catch (error) {
-    res.status(500).json({
-      error:
-        "An error occurred while fetching the appointment: " + error.message,
-    });
+    errorResponse(
+      res,
+      "An error occurred while fetching appointment: " + error.message,
+      500
+    );
   }
 };
 
@@ -176,14 +175,12 @@ exports.createAppointment = async (req, res) => {
     }
 
     if (!scheduledDate || isNaN(new Date(scheduledDate).getTime())) {
-      return res.status(400).json({ error: "Invalid scheduled date" });
+      return errorResponse(res, "Invalid scheduled date");
     }
 
     const appointmentDate = new Date(scheduledDate);
     if (appointmentDate < new Date()) {
-      return res
-        .status(400)
-        .json({ error: "Scheduled date cannot be in the past" });
+      return errorResponse(res, "Appointment date must be in the future");
     }
 
     const userWithProvince = await prisma.user.findUnique({
@@ -192,16 +189,14 @@ exports.createAppointment = async (req, res) => {
     });
 
     if (!userWithProvince?.Province) {
-      return res
-        .status(400)
-        .json({ error: "User's province information is missing" });
+      return errorResponse(res, "User does not have a province");
     }
 
     const bloodTypeRecord = await prisma.bloodType.findFirst({
       where: { Type: bloodType },
     });
     if (!bloodTypeRecord) {
-      return res.status(400).json({ error: "Invalid blood type" });
+      return errorResponse(res, "Invalid blood type");
     }
 
     const startOfDay = new Date(appointmentDate).setHours(0, 0, 0, 0);
@@ -214,9 +209,10 @@ exports.createAppointment = async (req, res) => {
       },
     });
     if (existingAppointment) {
-      return res
-        .status(400)
-        .json({ error: "An appointment already exists on this date" });
+      return errorResponse(
+        res,
+        "User already has an appointment scheduled for this day"
+      );
     }
 
     const newAppointment = await prisma.appointment.create({
@@ -228,15 +224,18 @@ exports.createAppointment = async (req, res) => {
       },
     });
 
-    res.status(201).json({
-      message: "Appointment created successfully",
-      appointmentDetails: newAppointment,
-    });
+    successResponse(
+      res,
+      "Appointment created successfully",
+      newAppointment,
+      201
+    );
   } catch (error) {
-    res.status(500).json({
-      error:
-        "An error occurred while creating the appointment: " + error.message,
-    });
+    errorResponse(
+      res,
+      "An error occurred while creating the appointment: " + error.message,
+      500
+    );
   }
 };
 
@@ -245,15 +244,18 @@ exports.rescheduleAppointment = async (req, res) => {
     const userId = req.user.id;
     const { appointmentId, newScheduledDate } = req.body;
 
+    const validationError = validateRescheduleAppointment(req.body);
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
+
     if (!newScheduledDate || isNaN(new Date(newScheduledDate).getTime())) {
-      return res.status(400).json({ error: "Invalid new scheduled date" });
+      return errorResponse(res, "Invalid new scheduled date");
     }
 
     const newAppointmentDate = new Date(newScheduledDate);
     if (newAppointmentDate < new Date()) {
-      return res
-        .status(400)
-        .json({ error: "New scheduled date cannot be in the past" });
+      return errorResponse(res, "New appointment date must be in the future");
     }
 
     const appointment = await prisma.appointment.findUnique({
@@ -261,18 +263,17 @@ exports.rescheduleAppointment = async (req, res) => {
     });
 
     if (!appointment || appointment.UserID !== userId) {
-      return res
-        .status(404)
-        .json({ error: "Appointment not found or user mismatch" });
+      return errorResponse(res, "Appointment not found or user mismatch");
     }
 
     if (
       appointment.Status === "completed" ||
       appointment.Status === "cancelled"
     ) {
-      return res.status(400).json({
-        error: "Cannot reschedule a completed or cancelled appointment",
-      });
+      return errorResponse(
+        res,
+        "Cannot reschedule a completed or already cancelled appointment"
+      );
     }
 
     const updatedAppointment = await prisma.appointment.update({
@@ -283,16 +284,17 @@ exports.rescheduleAppointment = async (req, res) => {
       },
     });
 
-    res.status(200).json({
-      message: "Appointment rescheduled successfully",
-      updatedAppointmentDetails: updatedAppointment,
-    });
+    successResponse(
+      res,
+      "Appointment rescheduled successfully",
+      updatedAppointment
+    );
   } catch (error) {
-    res.status(500).json({
-      error:
-        "An error occurred while rescheduling the appointment: " +
-        error.message,
-    });
+    errorResponse(
+      res,
+      "An error occurred while rescheduling the appointment: " + error.message,
+      500
+    );
   }
 };
 
@@ -306,24 +308,21 @@ exports.cancelAppointment = async (req, res) => {
     });
 
     if (!appointment || appointment.UserID !== userId) {
-      return res
-        .status(404)
-        .json({ error: "Appointment not found or user mismatch" });
+      return errorResponse(res, "Appointment not found or user mismatch");
     }
 
     if (
       appointment.Status === "completed" ||
       appointment.Status === "cancelled"
     ) {
-      return res.status(400).json({
-        error: "Cannot cancel a completed or already cancelled appointment",
-      });
+      return errorResponse(
+        res,
+        "Cannot cancel a completed or already cancelled appointment"
+      );
     }
 
     if (new Date(appointment.ScheduledDate) < new Date()) {
-      return res
-        .status(400)
-        .json({ error: "Cannot cancel a past appointment" });
+      return errorResponse(res, "Cannot cancel an appointment in the past");
     }
 
     const updatedAppointment = await prisma.appointment.update({
@@ -333,15 +332,17 @@ exports.cancelAppointment = async (req, res) => {
       },
     });
 
-    res.status(200).json({
-      message: "Appointment cancelled successfully",
-      updatedAppointmentDetails: updatedAppointment,
-    });
+    successResponse(
+      res,
+      "Appointment cancelled successfully",
+      updatedAppointment
+    );
   } catch (error) {
-    res.status(500).json({
-      error:
-        "An error occurred while cancelling the appointment: " + error.message,
-    });
+    errorResponse(
+      res,
+      "An error occurred while cancelling the appointment: " + error.message,
+      500
+    );
   }
 };
 
@@ -354,22 +355,24 @@ exports.completeAppointment = async (req, res) => {
     });
 
     if (!appointment) {
-      return res.status(404).json({ error: "Appointment not found" });
+      return errorResponse(res, "Appointment not found");
     }
 
     if (new Date(appointment.ScheduledDate) > new Date()) {
-      return res.status(400).json({
-        error: "Cannot complete an appointment that is in the future",
-      });
+      return errorResponse(
+        res,
+        "Cannot complete an appointment that is in the future"
+      );
     }
 
     if (
       appointment.Status === "completed" ||
       appointment.Status === "cancelled"
     ) {
-      return res.status(400).json({
-        error: "Cannot complete a cancelled or already completed appointment",
-      });
+      return errorResponse(
+        res,
+        "Cannot complete a completed or already cancelled appointment"
+      );
     }
 
     const updatedAppointment = await prisma.appointment.update({
@@ -379,15 +382,16 @@ exports.completeAppointment = async (req, res) => {
       },
     });
 
-    res.status(200).json({
-      message: "Appointment marked as completed successfully",
-      updatedAppointmentDetails: updatedAppointment,
-    });
+    successResponse(
+      res,
+      "Appointment completed successfully",
+      updatedAppointment
+    );
   } catch (error) {
-    res.status(500).json({
-      error:
-        "An error occurred while updating the appointment status: " +
-        error.message,
-    });
+    errorResponse(
+      res,
+      "An error occurred while completing the appointment: " + error.message,
+      500
+    );
   }
 };
