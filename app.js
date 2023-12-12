@@ -23,8 +23,6 @@ const emergencyRoutes = require("./routes/emergencyRoutes");
 const helpOfferRoutes = require("./routes/helpOfferRoutes");
 const bloodDriveRoutes = require("./routes/bloodDriveRoutes");
 const bloodInventoryRoutes = require("./routes/bloodInventoryRoutes");
-const adminRoutes = require("./routes/adminRoutes");
-const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 app.use(cookieParser());
