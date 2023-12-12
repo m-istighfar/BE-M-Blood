@@ -2,22 +2,38 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
+const Joi = require("joi");
 const { sendPasswordResetEmail } = require("../services/mailService");
 
-const successResponse = (res, message, data = null) => {
+const successResponse = (res, message, data = null, statusCode = 200) => {
   const response = { message };
   if (data !== null) {
     response.data = data;
   }
-  return res.status(200).json(response);
+  return res.status(statusCode).json(response);
 };
 
 const errorResponse = (res, message, statusCode = 400) => {
   return res.status(statusCode).json({ error: message });
 };
 
+const validateEmail = (email) => {
+  const schema = Joi.string().email().required();
+  return schema.validate(email);
+};
+
+const validatePassword = (password) => {
+  const schema = Joi.string().min(6).required(); // Adjust the password policy as needed
+  return schema.validate(password);
+};
+
 const requestPasswordReset = async (req, res) => {
   const { email } = req.body;
+  const { error } = validateEmail(email);
+  if (error) {
+    return errorResponse(res, error.details[0].message);
+  }
+
   const userAuth = await prisma.userAuth.findUnique({
     where: { Email: email },
   });
@@ -37,11 +53,14 @@ const requestPasswordReset = async (req, res) => {
     },
   });
 
-  const { success, error } = await sendPasswordResetEmail(email, resetToken);
+  const { success, error: mailError } = await sendPasswordResetEmail(
+    email,
+    resetToken
+  );
 
   if (!success) {
     return errorResponse(res, "Failed to send reset email.", 500, {
-      details: error,
+      details: mailError,
     });
   }
 
@@ -51,6 +70,11 @@ const requestPasswordReset = async (req, res) => {
 const resetPassword = async (req, res) => {
   const { resetToken } = req.params;
   const { newPassword } = req.body;
+
+  const { error } = validatePassword(newPassword);
+  if (error) {
+    return errorResponse(res, error.details[0].message);
+  }
 
   const userAuth = await prisma.userAuth.findFirst({
     where: {

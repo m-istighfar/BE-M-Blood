@@ -1246,18 +1246,68 @@ module.exports = router;
 // bloodDriveController.js
 
 const { PrismaClient } = require("@prisma/client");
+const Joi = require("joi");
 const prisma = new PrismaClient();
+
+const successResponse = (res, message, data = null, statusCode = 200) => {
+  return res.status(statusCode).json(data ? { message, data } : { message });
+};
+
+const errorResponse = (res, message, statusCode = 400) => {
+  return res.status(statusCode).json({ error: message });
+};
+
+const validateBloodDriveQuery = (data) => {
+  const schema = Joi.object({
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).optional(),
+    filterProvince: Joi.number().integer().optional(),
+    filterDesignation: Joi.string().optional(),
+    sortBy: Joi.string().optional(),
+    sortOrder: Joi.string().valid("asc", "desc").optional(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
+
+const validateCreateUpdateBloodDrive = (data) => {
+  const schema = Joi.object({
+    institute: Joi.string().required(),
+    provinceId: Joi.number().integer().required(),
+    designation: Joi.string().required(),
+    scheduledDate: Joi.date().min("now").required(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
 
 exports.getAllBloodDrives = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
+    const validationError = validateBloodDriveQuery(req.query);
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
 
-    const sortBy = req.query.sortBy || "ScheduledDate";
-    const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
-    const filterProvince = req.query.filterProvince;
-    const filterDesignation = req.query.filterDesignation;
+    const {
+      page,
+      limit,
+      filterProvince,
+      filterDesignation,
+      sortBy,
+      sortOrder,
+    } = req.query;
+
+    const pageNumber = parseInt(page) || 1;
+    const pageSize = parseInt(limit) || 10;
+    const offset = (pageNumber - 1) * pageSize;
+    const sortingCriteria = sortBy || "ScheduledDate";
+    const sortingOrder = sortOrder === "desc" ? "desc" : "asc";
 
     let whereClause = {};
     if (filterProvince) {
@@ -1269,9 +1319,9 @@ exports.getAllBloodDrives = async (req, res) => {
 
     const bloodDrives = await prisma.bloodDrive.findMany({
       skip: offset,
-      take: limit,
+      take: pageSize,
       orderBy: {
-        [sortBy]: sortOrder,
+        [sortingCriteria]: sortingOrder,
       },
       where: whereClause,
       include: {
@@ -1282,16 +1332,14 @@ exports.getAllBloodDrives = async (req, res) => {
 
     const totalRecords = await prisma.bloodDrive.count({ where: whereClause });
 
-    res.status(200).json({
+    successResponse(res, "Blood drives fetched successfully", {
       totalRecords,
-      totalPages: Math.ceil(totalRecords / limit),
-      currentPage: page,
       bloodDrives,
+      currentPage: pageNumber,
+      totalPages: Math.ceil(totalRecords / pageSize),
     });
   } catch (error) {
-    res.status(500).json({
-      error: "An error occurred while fetching blood drives: " + error.message,
-    });
+    errorResponse(res, "Error fetching blood drives: " + error.message, 500);
   }
 };
 
@@ -1301,15 +1349,19 @@ exports.getBloodDriveById = async (req, res) => {
 
     const bloodDrive = await prisma.bloodDrive.findUnique({
       where: { DriveID: parseInt(bloodDriveId) },
+      include: {
+        Province: true,
+        User: true,
+      },
     });
 
     if (!bloodDrive) {
-      return res.status(404).json({ error: "Blood drive not found" });
+      return errorResponse(res, "Blood drive not found", 404);
     }
 
-    res.status(200).json(bloodDrive);
+    successResponse(res, "Blood drive fetched successfully", bloodDrive);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    errorResponse(res, "Error fetching blood drive: " + error.message, 500);
   }
 };
 
@@ -1318,19 +1370,9 @@ exports.createBloodDrive = async (req, res) => {
     const userId = req.user.id;
     const { institute, provinceId, designation, scheduledDate } = req.body;
 
-    if (!institute || !provinceId || !designation || !scheduledDate) {
-      return res.status(400).json({ error: "All fields are required" });
-    }
-
-    const parsedDate = new Date(scheduledDate);
-    if (isNaN(parsedDate.getTime())) {
-      return res.status(400).json({ error: "Invalid scheduled date" });
-    }
-
-    if (parsedDate <= new Date()) {
-      return res
-        .status(400)
-        .json({ error: "Scheduled date must be in the future" });
+    const validationError = validateCreateUpdateBloodDrive(req.body);
+    if (validationError) {
+      return errorResponse(res, validationError);
     }
 
     const provinceIdInt = parseInt(provinceId, 10);
@@ -1340,7 +1382,7 @@ exports.createBloodDrive = async (req, res) => {
     });
 
     if (!provinceExists) {
-      return res.status(400).json({ error: "Invalid ProvinceID" });
+      return errorResponse(res, "Invalid ProvinceID", 400);
     }
 
     const newBloodDrive = await prisma.bloodDrive.create({
@@ -1349,15 +1391,18 @@ exports.createBloodDrive = async (req, res) => {
         Institute: institute,
         ProvinceID: provinceIdInt,
         Designation: designation,
-        ScheduledDate: parsedDate,
+        ScheduledDate: new Date(scheduledDate),
       },
     });
 
-    res
-      .status(201)
-      .json({ message: "Blood drive created successfully", newBloodDrive });
+    successResponse(
+      res,
+      "Blood drive created successfully",
+      newBloodDrive,
+      201
+    );
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    errorResponse(res, "Error creating the blood drive: " + error.message, 500);
   }
 };
 
@@ -1365,52 +1410,39 @@ exports.updateBloodDrive = async (req, res) => {
   try {
     const { bloodDriveId } = req.params;
     const { institute, provinceId, designation, scheduledDate } = req.body;
-    const bloodDriveIdInt = parseInt(bloodDriveId, 10);
 
-    if (!institute && !provinceId && !designation && !scheduledDate) {
-      return res
-        .status(400)
-        .json({ error: "No valid fields provided for update" });
+    const validationError = validateCreateUpdateBloodDrive(req.body);
+    if (validationError) {
+      return errorResponse(res, validationError);
     }
+
+    const bloodDriveIdInt = parseInt(bloodDriveId, 10);
 
     const existingBloodDrive = await prisma.bloodDrive.findUnique({
       where: { DriveID: bloodDriveIdInt },
     });
 
     if (!existingBloodDrive) {
-      return res.status(404).json({ error: "Blood drive not found" });
-    }
-
-    const updateData = {};
-    if (institute) updateData.Institute = institute;
-    if (provinceId) updateData.ProvinceID = parseInt(provinceId, 10);
-    if (designation) updateData.Designation = designation;
-    if (scheduledDate) {
-      const parsedDate = new Date(scheduledDate);
-      if (isNaN(parsedDate.getTime())) {
-        return res.status(400).json({ error: "Invalid scheduled date" });
-      }
-      if (parsedDate <= new Date()) {
-        return res
-          .status(400)
-          .json({ error: "Scheduled date must be in the future" });
-      }
-      updateData.ScheduledDate = parsedDate;
+      return errorResponse(res, "Blood drive not found", 404);
     }
 
     const updatedBloodDrive = await prisma.bloodDrive.update({
       where: { DriveID: bloodDriveIdInt },
-      data: updateData,
+      data: {
+        Institute: institute || existingBloodDrive.Institute,
+        ProvinceID: provinceId
+          ? parseInt(provinceId, 10)
+          : existingBloodDrive.ProvinceID,
+        Designation: designation || existingBloodDrive.Designation,
+        ScheduledDate: scheduledDate
+          ? new Date(scheduledDate)
+          : existingBloodDrive.ScheduledDate,
+      },
     });
 
-    res.status(200).json({
-      message: "Blood drive updated successfully",
-      updatedBloodDrive,
-    });
+    successResponse(res, "Blood drive updated successfully", updatedBloodDrive);
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error updating blood drive: " + error.message });
+    errorResponse(res, "Error updating blood drive: " + error.message, 500);
   }
 };
 
@@ -1424,20 +1456,19 @@ exports.deleteBloodDrive = async (req, res) => {
     });
 
     if (!existingBloodDrive) {
-      return res.status(404).json({ error: "Blood drive not found" });
+      return errorResponse(res, "Blood drive not found", 404);
     }
 
     await prisma.bloodDrive.delete({
       where: { DriveID: bloodDriveIdInt },
     });
 
-    res.status(200).json({ message: "Blood drive deleted successfully" });
+    successResponse(res, "Blood drive deleted successfully");
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error deleting blood drive: " + error.message });
+    errorResponse(res, "Error deleting blood drive: " + error.message, 500);
   }
 };
+
 
 // bloodInventoryRoutes.js
 
