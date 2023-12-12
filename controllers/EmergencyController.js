@@ -1,8 +1,65 @@
 const { PrismaClient } = require("@prisma/client");
+const Joi = require("joi");
 const prisma = new PrismaClient();
 
+const successResponse = (res, message, data = null, statusCode = 200) => {
+  return res.status(statusCode).json(data ? { message, data } : { message });
+};
+
+const errorResponse = (res, message, statusCode = 400) => {
+  return res.status(statusCode).json({ error: message });
+};
+
+const validateEmergencyRequestQuery = (data) => {
+  const schema = Joi.object({
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).optional(),
+    bloodType: Joi.string().optional(),
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+    provinceId: Joi.number().integer().optional(),
+    sortBy: Joi.string().optional(),
+    sortOrder: Joi.string().valid("asc", "desc").optional(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
+
+const validateCreateEmergencyRequest = (data) => {
+  const schema = Joi.object({
+    bloodType: Joi.string().required(),
+    additionalInfo: Joi.string().allow("").optional(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
+
+const validateUpdateEmergencyRequest = (data) => {
+  const schema = Joi.object({
+    additionalInfo: Joi.string().allow("").optional(),
+    newBloodTypeID: Joi.number().integer().optional(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
+
+// getAllEmergencyRequests endpoint
 exports.getAllEmergencyRequests = async (req, res) => {
   try {
+    const validationError = validateEmergencyRequestQuery(req.query);
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
+
     const {
       page,
       limit,
@@ -21,28 +78,19 @@ exports.getAllEmergencyRequests = async (req, res) => {
     const sortingOrder = sortOrder === "desc" ? "desc" : "asc";
 
     let whereClause = {};
-    if (bloodType) {
-      whereClause.BloodTypeID = parseInt(bloodType);
-    }
-
+    if (bloodType) whereClause.BloodTypeID = parseInt(bloodType);
     if (startDate && endDate) {
       whereClause.RequestDate = {
         gte: new Date(startDate),
         lte: new Date(endDate),
       };
     }
-    if (provinceId) {
-      whereClause.User = {
-        ProvinceID: parseInt(provinceId),
-      };
-    }
+    if (provinceId) whereClause.User = { ProvinceID: parseInt(provinceId) };
 
     const emergencyRequests = await prisma.emergencyRequest.findMany({
       skip: offset,
       take: pageSize,
-      orderBy: {
-        [sortingCriteria]: sortingOrder,
-      },
+      orderBy: { [sortingCriteria]: sortingOrder },
       where: whereClause,
       include: {
         BloodType: true,
@@ -54,19 +102,22 @@ exports.getAllEmergencyRequests = async (req, res) => {
       where: whereClause,
     });
 
-    res.status(200).json({
+    successResponse(res, "Emergency requests fetched successfully", {
       totalRequests,
-      totalPages: Math.ceil(totalRequests / pageSize),
-      currentPage: pageNumber,
       emergencyRequests,
+      currentPage: pageNumber,
+      totalPages: Math.ceil(totalRequests / pageSize),
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error fetching emergency requests: " + error.message });
+    errorResponse(
+      res,
+      "Error fetching emergency requests: " + error.message,
+      500
+    );
   }
 };
 
+// getEmergencyRequestById endpoint
 exports.getEmergencyRequestById = async (req, res) => {
   try {
     const { emergencyRequestId } = req.params;
@@ -80,27 +131,39 @@ exports.getEmergencyRequestById = async (req, res) => {
     });
 
     if (!emergencyRequest) {
-      return res.status(404).json({ error: "Emergency request not found" });
+      return errorResponse(res, "Emergency request not found", 404);
     }
 
-    res.status(200).json(emergencyRequest);
+    successResponse(
+      res,
+      "Emergency request fetched successfully",
+      emergencyRequest
+    );
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error fetching emergency request: " + error.message });
+    errorResponse(
+      res,
+      "Error fetching emergency request: " + error.message,
+      500
+    );
   }
 };
 
+// createEmergencyRequest endpoint
 exports.createEmergencyRequest = async (req, res) => {
   try {
     const userId = req.user.id;
     const { bloodType, additionalInfo } = req.body;
 
+    const validationError = validateCreateEmergencyRequest(req.body);
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
+
     const bloodTypeRecord = await prisma.bloodType.findFirst({
       where: { Type: bloodType },
     });
     if (!bloodTypeRecord) {
-      return res.status(400).json({ error: "Invalid blood type" });
+      return errorResponse(res, "Invalid blood type", 400);
     }
 
     const userWithProvince = await prisma.user.findUnique({
@@ -109,9 +172,7 @@ exports.createEmergencyRequest = async (req, res) => {
     });
 
     if (!userWithProvince?.Province) {
-      return res
-        .status(400)
-        .json({ error: "User's province information is missing" });
+      return errorResponse(res, "User's province information is missing", 400);
     }
 
     const inventory = await prisma.bloodInventory.findFirst({
@@ -123,10 +184,13 @@ exports.createEmergencyRequest = async (req, res) => {
     });
 
     if (!inventory) {
-      return res.status(404).json({
-        error: "Requested blood type currently unavailable in your area",
-      });
+      return errorResponse(
+        res,
+        "Requested blood type currently unavailable in your area",
+        404
+      );
     }
+
     const newEmergencyRequest = await prisma.emergencyRequest.create({
       data: {
         UserID: userId,
@@ -137,15 +201,22 @@ exports.createEmergencyRequest = async (req, res) => {
       },
     });
 
-    res.status(201).json({
-      message: "Emergency blood request created successfully",
-      emergencyRequest: newEmergencyRequest,
-    });
+    successResponse(
+      res,
+      "Emergency blood request created successfully",
+      newEmergencyRequest,
+      201
+    );
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    errorResponse(
+      res,
+      "Error creating the emergency request: " + error.message,
+      500
+    );
   }
 };
 
+// updateEmergencyRequest endpoint
 exports.updateEmergencyRequest = async (req, res) => {
   try {
     const { emergencyRequestId } = req.params;
@@ -153,18 +224,25 @@ exports.updateEmergencyRequest = async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
+    const validationError = validateUpdateEmergencyRequest(req.body);
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
+
     const emergencyRequest = await prisma.emergencyRequest.findUnique({
       where: { RequestID: parseInt(emergencyRequestId) },
     });
 
     if (!emergencyRequest) {
-      return res.status(404).json({ error: "Emergency request not found" });
+      return errorResponse(res, "Emergency request not found", 404);
     }
 
     if (emergencyRequest.UserID !== userId && userRole !== "admin") {
-      return res
-        .status(403)
-        .json({ error: "Unauthorized to update this emergency request" });
+      return errorResponse(
+        res,
+        "Unauthorized to update this emergency request",
+        403
+      );
     }
 
     const updatedEmergencyRequest = await prisma.emergencyRequest.update({
@@ -175,17 +253,21 @@ exports.updateEmergencyRequest = async (req, res) => {
       },
     });
 
-    res.status(200).json({
-      message: "Emergency request updated successfully",
-      emergencyRequest: updatedEmergencyRequest,
-    });
+    successResponse(
+      res,
+      "Emergency request updated successfully",
+      updatedEmergencyRequest
+    );
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error updating emergency request: " + error.message });
+    errorResponse(
+      res,
+      "Error updating emergency request: " + error.message,
+      500
+    );
   }
 };
 
+// deleteEmergencyRequest endpoint
 exports.deleteEmergencyRequest = async (req, res) => {
   try {
     const { emergencyRequestId } = req.params;
@@ -197,23 +279,27 @@ exports.deleteEmergencyRequest = async (req, res) => {
     });
 
     if (!emergencyRequest) {
-      return res.status(404).json({ error: "Emergency request not found" });
+      return errorResponse(res, "Emergency request not found", 404);
     }
 
     if (emergencyRequest.UserID !== userId && userRole !== "admin") {
-      return res
-        .status(403)
-        .json({ error: "Unauthorized to delete this emergency request" });
+      return errorResponse(
+        res,
+        "Unauthorized to delete this emergency request",
+        403
+      );
     }
 
     await prisma.emergencyRequest.delete({
       where: { RequestID: parseInt(emergencyRequestId) },
     });
 
-    res.status(200).json({ message: "Emergency request deleted successfully" });
+    successResponse(res, "Emergency request deleted successfully");
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error deleting emergency request: " + error.message });
+    errorResponse(
+      res,
+      "Error deleting emergency request: " + error.message,
+      500
+    );
   }
 };
