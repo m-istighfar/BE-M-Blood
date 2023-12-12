@@ -15,7 +15,7 @@ const validateHelpOfferData = (data) => {
     bloodType: Joi.string().required(),
     isWillingToDonate: Joi.boolean().required(),
     canHelpInEmergency: Joi.boolean().required(),
-    location: Joi.string().optional(),
+    location: Joi.string().required(),
     reason: Joi.string().optional(),
   });
 
@@ -34,6 +34,21 @@ const validateQueryParameters = (data) => {
     canHelpInEmergency: Joi.boolean().optional(),
     location: Joi.string().optional(),
     sort: Joi.string().optional(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
+
+const validateHelpOfferUpdate = (data) => {
+  const schema = Joi.object({
+    bloodType: Joi.string().optional(),
+    isWillingToDonate: Joi.boolean().optional(),
+    canHelpInEmergency: Joi.boolean().optional(),
+    location: Joi.string().optional(),
+    reason: Joi.string().optional(),
   });
 
   const { error } = schema.validate(data, { abortEarly: false });
@@ -189,10 +204,15 @@ exports.updateHelpOffer = async (req, res) => {
   try {
     const { helpOfferId } = req.params;
     const userId = req.user.id;
-    const { isWillingToDonate, canHelpInEmergency, reason, location } =
-      req.body;
+    const {
+      isWillingToDonate,
+      canHelpInEmergency,
+      reason,
+      location,
+      bloodType,
+    } = req.body;
 
-    const validationError = validateHelpOfferData(req.body);
+    const validationError = validateHelpOfferUpdate(req.body);
     if (validationError) {
       return errorResponse(res, validationError);
     }
@@ -214,6 +234,16 @@ exports.updateHelpOffer = async (req, res) => {
         res,
         "Invalid location, must be within a valid province"
       );
+    }
+
+    let bloodTypeRecord = null;
+    if (bloodType) {
+      bloodTypeRecord = await prisma.bloodType.findFirst({
+        where: { Type: bloodType },
+      });
+      if (!bloodTypeRecord) {
+        return errorResponse(res, "Invalid blood type");
+      }
     }
 
     const updatedHelpOffer = await prisma.helpOffer.update({
