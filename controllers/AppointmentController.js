@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const joi = require("joi");
 
 exports.getAppointments = async (req, res) => {
   try {
