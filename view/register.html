@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Register</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h2>Register</h2>
+      <form id="registerForm">
+        <input
+          type="text"
+          id="username"
+          placeholder="Username"
+          required
+        /><br />
+        <input type="email" id="email" placeholder="Email" required /><br />
+        <input
+          type="password"
+          id="password"
+          placeholder="Password"
+          required
+        /><br />
+        <input type="text" id="name" placeholder="Name" required /><br />
+        <input type="text" id="phone" placeholder="Phone" required /><br />
+        <select id="provinceId"></select
+        ><br />
+        <textarea id="additionalInfo" placeholder="Additional Info"></textarea
+        ><br />
+        <button type="submit">Register</button>
+      </form>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
