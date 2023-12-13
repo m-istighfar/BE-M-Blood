@@ -3,13 +3,20 @@ document
   .addEventListener("submit", function (e) {
     e.preventDefault();
 
-    const amount = document.getElementById("amount").value;
+    const formData = {
+      firstName: document.getElementById("firstName").value,
+      lastName: document.getElementById("lastName").value,
+      email: document.getElementById("email").value,
+      phone: document.getElementById("phone").value,
+      amount: document.getElementById("amount").value,
+    };
+
     fetch("http://localhost:3000/donate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ amount: amount }),
+      body: JSON.stringify(formData),
     })
       .then((response) => response.json())
       .then((data) => {

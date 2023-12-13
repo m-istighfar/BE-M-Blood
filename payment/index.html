@@ -2,25 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Simple Donation Form</title>
+    <title>Donate</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div class="donation-container">
-      <h1>Make a Donation</h1>
-      <form id="donationForm">
-        <input
-          type="number"
-          id="amount"
-          name="amount"
-          placeholder="Enter amount"
-          required
-        />
-        <button type="submit">Donate</button>
-      </form>
-    </div>
-
+    <form id="donationForm">
+      <input type="text" id="firstName" placeholder="First Name" required />
+      <input type="text" id="lastName" placeholder="Last Name" required />
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="tel" id="phone" placeholder="Phone Number" required />
+      <input type="number" id="amount" placeholder="Amount" required />
+      <button type="submit">Donate</button>
+    </form>
     <script src="script.js"></script>
   </body>
 </html>
