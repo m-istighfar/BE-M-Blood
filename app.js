@@ -1,4 +1,5 @@
 require("dotenv").config();
+const localtunnel = require("localtunnel");
 
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
@@ -79,6 +80,16 @@ app.use("/", paymentRoutes);
 // app.use("/user", authMiddleware, authorizationMiddleware(["user"]), userRoutes);
 
 app.use(errorFormatter);
+
+(async () => {
+  const tunnel = await localtunnel({ port: 3001 });
+
+  console.log(`Your app is available at ${tunnel.url}`);
+
+  tunnel.on("close", () => {
+    console.log("Tunnel is closed");
+  });
+})();
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}...`));
