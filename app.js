@@ -63,7 +63,7 @@ app.use(
 app.use("/blood-inventory", authMiddleware, bloodInventoryRoutes);
 
 app.use("/blood-drive", authMiddleware, bloodDriveRoutes);
-app.use("/province", authMiddleware, provinceRoutes);
+app.use("/province", provinceRoutes);
 // app.use(
 //   "/admin",
 //   authMiddleware,
