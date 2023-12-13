@@ -11,34 +11,32 @@ let snap = new midtransClient.Snap({
 //   serverKey: "Mid-client-TR9-JKeBlqCVnWQB",
 //   clientKey: "Mid-server-TGbbI-Hnf4lXZuylxnnpH9zl",
 // });
-const createTransaction = (req, res) => {
-  let parameter = {
-    transaction_details: {
-      order_id: "order-id-" + Math.round(new Date().getTime() / 1000),
-      gross_amount: Number(req.body.amount),
-    },
-    customer_details: {
-      first_name: req.body.firstName,
-      last_name: req.body.lastName,
-      email: req.body.email,
-      phone: req.body.phone,
-    },
-    credit_card: {
-      secure: true,
-    },
-  };
+const createTransaction = async (req, res) => {
+  const { firstName, lastName, email, phone, amount } = req.body;
 
-  snap
-    .createTransaction(parameter)
-    .then((transaction) => {
-      let redirectUrl = transaction.redirect_url;
-      res.json({ redirectUrl: redirectUrl });
-    })
-    .catch((error) => {
-      res
-        .status(500)
-        .json({ message: "Internal server error", error: error.message });
-    });
+  try {
+    let parameter = {
+      transaction_details: {
+        order_id: "order-id-" + Math.round(new Date().getTime() / 1000),
+        gross_amount: Number(amount),
+      },
+      customer_details: {
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        phone: phone,
+      },
+      credit_card: {
+        secure: true,
+      },
+    };
+
+    const token = await snap.createTransactionToken(parameter);
+
+    return res.status(200).json({ snapToken: token });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
 };
 
 module.exports = { createTransaction };

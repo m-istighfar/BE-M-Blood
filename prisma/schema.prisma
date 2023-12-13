@@ -127,6 +127,15 @@ model BloodInventory {
   UpdatedAt       DateTime      @updatedAt
 }
 
+model Donation {
+  DonationID     Int       @id @default(autoincrement())
+  DonorName      String
+  DonorEmail     String
+  Amount         Float
+  CreatedAt      DateTime  @default(now())
+}
+
+
 enum UserRole {
   admin
   user
