@@ -35,6 +35,7 @@ const validateCreateEmergencyRequest = (data) => {
   const schema = Joi.object({
     bloodType: Joi.string().required(),
     additionalInfo: Joi.string().allow("").optional(),
+    location: Joi.string().optional(),
   });
 
   const { error } = schema.validate(data, { abortEarly: false });
@@ -46,7 +47,8 @@ const validateCreateEmergencyRequest = (data) => {
 const validateUpdateEmergencyRequest = (data) => {
   const schema = Joi.object({
     additionalInfo: Joi.string().allow("").optional(),
-    newBloodTypeID: Joi.number().integer().optional(),
+    bloodType: Joi.string().optional(),
+    location: Joi.string().optional(),
   });
 
   const { error } = schema.validate(data, { abortEarly: false });
@@ -169,7 +171,7 @@ exports.getEmergencyRequestById = async (req, res) => {
 exports.createEmergencyRequest = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { bloodType, additionalInfo } = req.body;
+    const { bloodType, additionalInfo, location: manualLocation } = req.body;
 
     const validationError = validateCreateEmergencyRequest(req.body);
     if (validationError) {
@@ -187,34 +189,47 @@ exports.createEmergencyRequest = async (req, res) => {
       where: { UserID: userId },
       include: { Province: true },
     });
-
     if (!userWithProvince?.Province) {
       return errorResponse(res, "User's province information is missing", 400);
+    }
+
+    let provinceIDForInventoryCheck;
+    if (manualLocation) {
+      const province = await prisma.province.findFirst({
+        where: { Name: manualLocation },
+      });
+      if (!province) {
+        return errorResponse(res, "Invalid location", 400);
+      }
+      provinceIDForInventoryCheck = province.ProvinceID;
+    } else {
+      provinceIDForInventoryCheck = userWithProvince.Province.ProvinceID;
     }
 
     const inventory = await prisma.bloodInventory.findFirst({
       where: {
         BloodTypeID: bloodTypeRecord.BloodTypeID,
         Quantity: { gt: 0 },
-        ProvinceID: userWithProvince.Province.ProvinceID,
+        ProvinceID: provinceIDForInventoryCheck,
       },
     });
-
     if (!inventory) {
       return errorResponse(
         res,
-        "Requested blood type currently unavailable in your area",
+        "Requested blood type currently unavailable in selected area",
         404
       );
     }
 
+    const emergencyLocation =
+      manualLocation || userWithProvince.Province.Capital;
     const newEmergencyRequest = await prisma.emergencyRequest.create({
       data: {
         UserID: userId,
         BloodTypeID: bloodTypeRecord.BloodTypeID,
         RequestDate: new Date(),
         AdditionalInfo: additionalInfo,
-        Location: userWithProvince.Province.Capital,
+        Location: emergencyLocation,
       },
     });
 
