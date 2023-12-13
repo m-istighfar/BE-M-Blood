@@ -251,7 +251,7 @@ exports.createEmergencyRequest = async (req, res) => {
 exports.updateEmergencyRequest = async (req, res) => {
   try {
     const { emergencyRequestId } = req.params;
-    const { additionalInfo, newBloodTypeID } = req.body;
+    const { additionalInfo, bloodType, location } = req.body;
     const userId = req.user.id;
     const userRole = req.user.role;
 
@@ -262,6 +262,9 @@ exports.updateEmergencyRequest = async (req, res) => {
 
     const emergencyRequest = await prisma.emergencyRequest.findUnique({
       where: { RequestID: parseInt(emergencyRequestId) },
+      include: {
+        User: true,
+      },
     });
 
     if (!emergencyRequest) {
@@ -276,11 +279,52 @@ exports.updateEmergencyRequest = async (req, res) => {
       );
     }
 
+    let bloodTypeID = emergencyRequest.BloodTypeID;
+    let provinceID;
+
+    if (bloodType) {
+      const bloodTypeRecord = await prisma.bloodType.findFirst({
+        where: { Type: bloodType },
+      });
+      if (!bloodTypeRecord) {
+        return errorResponse(res, "Invalid blood type", 400);
+      }
+      bloodTypeID = bloodTypeRecord.BloodTypeID;
+    }
+
+    if (location) {
+      const province = await prisma.province.findFirst({
+        where: { Name: location },
+      });
+      if (!province) {
+        return errorResponse(res, "Invalid location", 400);
+      }
+      provinceID = province.ProvinceID;
+    } else {
+      provinceID = emergencyRequest.User.ProvinceID;
+    }
+
+    const inventory = await prisma.bloodInventory.findFirst({
+      where: {
+        BloodTypeID: bloodTypeID,
+        Quantity: { gt: 0 },
+        ProvinceID: provinceID,
+      },
+    });
+    if (!inventory) {
+      return errorResponse(
+        res,
+        "Requested blood type currently unavailable in selected area",
+        404
+      );
+    }
+
     const updatedEmergencyRequest = await prisma.emergencyRequest.update({
       where: { RequestID: parseInt(emergencyRequestId) },
       data: {
         AdditionalInfo: additionalInfo || emergencyRequest.AdditionalInfo,
-        BloodTypeID: newBloodTypeID || emergencyRequest.BloodTypeID,
+        BloodTypeID: bloodTypeID,
+        Location: location || emergencyRequest.Location,
       },
     });
 
