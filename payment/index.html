@@ -19,6 +19,10 @@
       <input type="number" id="amount" placeholder="Amount" required />
       <button type="submit">Donate</button>
     </form>
+
+    <div id="totalDonationsDisplay">
+      <h3>Total Donations: <span id="totalDonations">Loading...</span></h3>
+    </div>
     <script>
       document
         .getElementById("donationForm")
@@ -48,6 +52,20 @@
             })
             .catch((error) => console.error("Error:", error));
         });
+
+      function fetchTotalDonations() {
+        fetch("http://localhost:3000/total-donations")
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById("totalDonations").textContent =
+              data.totalDonations || "0";
+          })
+          .catch((error) =>
+            console.error("Error fetching total donations:", error)
+          );
+      }
+
+      fetchTotalDonations();
     </script>
   </body>
 </html>

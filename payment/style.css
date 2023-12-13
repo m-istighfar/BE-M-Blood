@@ -20,3 +20,12 @@ button {
   border: 1px solid #ddd;
   border-radius: 5px;
 }
+
+#totalDonationsDisplay {
+  margin-top: 20px;
+  text-align: center;
+}
+
+#totalDonations {
+  font-weight: bold;
+}
