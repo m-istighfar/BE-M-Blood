@@ -63,19 +63,21 @@ const requestPasswordReset = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   const { resetToken } = req.params;
-  const { newPassword } = req.body;
+  const { newPassword, confirmPassword } = req.body;
 
   const validationResult = validatePassword(newPassword);
   if (validationResult.error) {
     return errorResponse(res, "Invalid password format");
   }
 
+  if (newPassword !== confirmPassword) {
+    return errorResponse(res, "Password confirmation does not match");
+  }
+
   const userAuth = await prisma.userAuth.findFirst({
     where: {
       ResetPasswordToken: resetToken,
-      ResetPasswordExpires: {
-        gt: new Date(),
-      },
+      ResetPasswordExpires: { gt: new Date() },
     },
   });
 
