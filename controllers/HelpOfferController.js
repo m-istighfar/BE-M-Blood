@@ -25,23 +25,6 @@ const validateHelpOfferData = (data) => {
     : null;
 };
 
-const validateQueryParameters = (data) => {
-  const schema = Joi.object({
-    page: Joi.number().integer().min(1).optional(),
-    limit: Joi.number().integer().min(1).optional(),
-    bloodType: Joi.string().optional(),
-    isWillingToDonate: Joi.boolean().optional(),
-    canHelpInEmergency: Joi.boolean().optional(),
-    location: Joi.string().optional(),
-    sort: Joi.string().optional(),
-  });
-
-  const { error } = schema.validate(data, { abortEarly: false });
-  return error
-    ? error.details.map((detail) => detail.message).join(", ")
-    : null;
-};
-
 const validateHelpOfferUpdate = (data) => {
   const schema = Joi.object({
     bloodType: Joi.string().optional(),
@@ -60,69 +43,94 @@ const validateHelpOfferUpdate = (data) => {
 exports.getAllHelpOffers = async (req, res) => {
   try {
     const {
-      page,
-      limit,
+      searchBy,
+      query,
       bloodType,
       isWillingToDonate,
       canHelpInEmergency,
       location,
-      sort,
+      reason,
+      page,
+      limit,
+      orderBy,
     } = req.query;
-
-    const validationError = validateQueryParameters(req.query);
-    if (validationError) {
-      return errorResponse(res, validationError);
-    }
 
     const pageNumber = parseInt(page) || 1;
     const pageSize = parseInt(limit) || 10;
+    const offset = (pageNumber - 1) * pageSize;
 
-    let whereClause = {};
-    if (bloodType) whereClause.BloodTypeID = parseInt(bloodType);
-    if (isWillingToDonate)
-      whereClause.IsWillingToDonate = isWillingToDonate === "true";
-    if (canHelpInEmergency)
-      whereClause.CanHelpInEmergency = canHelpInEmergency === "true";
-    if (location) whereClause.Location = { contains: location };
+    let where = {};
 
-    let orderBy = { CreatedAt: "desc" };
-
-    if (sort) {
-      const allowedSortFields = ["CreatedAt", "UpdatedAt"];
-      const [sortField, sortOrder] = sort.split(":");
-
-      if (allowedSortFields.includes(sortField)) {
-        orderBy = {
-          [sortField]: sortOrder.toLowerCase() === "asc" ? "asc" : "desc",
-        };
+    if (bloodType) {
+      const bloodTypeRecord = await prisma.bloodType.findFirst({
+        where: { Type: { equals: bloodType, mode: "insensitive" } },
+      });
+      if (bloodTypeRecord) {
+        where.BloodTypeID = bloodTypeRecord.BloodTypeID;
       }
     }
 
+    if (isWillingToDonate)
+      where.IsWillingToDonate = isWillingToDonate === "true";
+    if (canHelpInEmergency)
+      where.CanHelpInEmergency = canHelpInEmergency === "true";
+    if (location) where.Location = { contains: location, mode: "insensitive" };
+    if (reason) where.Reason = { contains: reason, mode: "insensitive" };
+
+    if (searchBy && query) {
+      const searchConditions = [];
+
+      if (searchBy === "all" || searchBy === "location") {
+        searchConditions.push({
+          Location: { contains: query, mode: "insensitive" },
+        });
+      }
+      if (searchBy === "all" || searchBy === "reason") {
+        searchConditions.push({
+          Reason: { contains: query, mode: "insensitive" },
+        });
+      }
+
+      if (searchConditions.length > 0) {
+        where.OR = searchConditions;
+      }
+    }
+
+    let orderByClause = {};
+
+    if (orderBy) {
+      const [field, order] = orderBy.split(":");
+      if (["asc", "desc"].includes(order.toLowerCase())) {
+        orderByClause[field] = order.toLowerCase();
+      }
+    } else {
+      orderByClause = { CreatedAt: "asc" };
+    }
+
     const helpOffers = await prisma.helpOffer.findMany({
-      skip: (pageNumber - 1) * pageSize,
+      where: where,
+      skip: offset,
       take: pageSize,
-      where: whereClause,
-      orderBy: orderBy,
+      orderBy: orderByClause,
       include: {
         User: true,
         BloodType: true,
       },
     });
 
-    const totalRecords = await prisma.helpOffer.count({ where: whereClause });
-    const totalPages = Math.ceil(totalRecords / pageSize);
+    const totalRecords = await prisma.helpOffer.count({ where: where });
 
-    return successResponse(res, "Help offers fetched successfully", {
+    successResponse(res, "Help offers fetched successfully", {
       totalRecords,
       helpOffers,
       currentPage: pageNumber,
-      totalPages,
+      totalPages: Math.ceil(totalRecords / pageSize),
     });
   } catch (error) {
-    console.error(error);
-    return errorResponse(res, "Error fetching help offers", 500);
+    errorResponse(res, "Error fetching help offers: " + error.message, 500);
   }
 };
+
 exports.getHelpOfferById = async (req, res) => {
   try {
     const { helpOfferId } = req.params;
