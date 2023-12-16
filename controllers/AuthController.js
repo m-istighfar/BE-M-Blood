@@ -112,6 +112,7 @@ const register = async (req, res) => {
       data: {
         ProvinceID: parseInt(provinceId),
         Name: name,
+        Email: email,
         Phone: phone,
         AdditionalInfo: additionalInfo,
         UserAuth: {

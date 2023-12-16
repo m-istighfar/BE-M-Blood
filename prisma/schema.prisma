@@ -38,6 +38,7 @@ model User {
   Province        Province       @relation(fields: [ProvinceID], references: [ProvinceID])
   Name            String
   Phone           String
+  Email           String
   AdditionalInfo  String?
   Appointments    Appointment[]
   EmergencyRequests EmergencyRequest[]

@@ -25,6 +25,7 @@ const bloodDriveRoutes = require("./routes/bloodDriveRoutes");
 const bloodInventoryRoutes = require("./routes/bloodInventoryRoutes");
 const provinceRoutes = require("./routes/provinceRoutes");
 const bloodTypesRoutes = require("./routes/bloodTypesRoutes");
+const userRoutes = require("./routes/userRoutes");
 const paymentRoutes = require("./payment/routes");
 
 const app = express();
@@ -68,6 +69,8 @@ app.use("/blood-drive", authMiddleware, bloodDriveRoutes);
 app.use("/province", provinceRoutes);
 app.use("/blood-type", bloodTypesRoutes);
 app.use("/", paymentRoutes);
+
+app.use("/user", authMiddleware, userRoutes);
 
 // app.use(
 //   "/admin",
