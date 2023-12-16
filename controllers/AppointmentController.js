@@ -64,8 +64,7 @@ exports.getAppointments = async (req, res) => {
       searchBy,
       query,
       bloodType,
-      startDate,
-      endDate,
+      scheduledDate,
       location,
       status,
       page,
@@ -80,52 +79,70 @@ exports.getAppointments = async (req, res) => {
     let where = {};
 
     if (bloodType) {
-      where.BloodType = { contains: bloodType, mode: "insensitive" };
+      const bloodTypeRecord = await prisma.bloodType.findFirst({
+        where: { Type: { equals: bloodType, mode: "insensitive" } },
+      });
+      if (bloodTypeRecord) {
+        where.BloodTypeID = bloodTypeRecord.BloodTypeID;
+      }
     }
-    if (startDate && endDate) {
+
+    if (scheduledDate) {
+      const date = new Date(scheduledDate);
       where.ScheduledDate = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
+        gte: new Date(date.setHours(0, 0, 0, 0)),
+        lte: new Date(date.setHours(23, 59, 59, 999)),
       };
     }
     if (location) {
-      where.Location = { contains: location, mode: "insensitive" };
+      where.location = { contains: location, mode: "insensitive" };
     }
     if (status) {
-      where.Status = { contains: status, mode: "insensitive" };
+      where.Status = status;
     }
 
     if (searchBy && query) {
       const searchConditions = [];
       if (searchBy === "all" || searchBy === "bloodType") {
-        searchConditions.push({
-          BloodType: { contains: query, mode: "insensitive" },
+        const bloodTypeRecord = await prisma.bloodType.findFirst({
+          where: { Type: { equals: query, mode: "insensitive" } },
         });
+        if (bloodTypeRecord) {
+          searchConditions.push({ BloodTypeID: bloodTypeRecord.BloodTypeID });
+        }
       }
+
       if (searchBy === "all" || searchBy === "location") {
         searchConditions.push({
           Location: { contains: query, mode: "insensitive" },
         });
       }
       if (searchBy === "all" || searchBy === "status") {
-        searchConditions.push({
-          Status: { contains: query, mode: "insensitive" },
-        });
+        const validStatuses = [
+          "scheduled",
+          "completed",
+          "cancelled",
+          "rescheduled",
+        ];
+        if (validStatuses.includes(query.toLowerCase())) {
+          searchConditions.push({ Status: query.toLowerCase() });
+        }
       }
 
-      where = {
-        ...where,
-        AND: searchConditions.length > 0 ? { OR: searchConditions } : {},
-      };
+      if (searchConditions.length > 0) {
+        where.OR = searchConditions;
+      }
     }
 
-    let orderByClause = { ScheduledDate: "asc" };
+    let orderByClause = {};
 
     if (orderBy) {
       const [field, order] = orderBy.split(":");
       if (["asc", "desc"].includes(order.toLowerCase())) {
-        orderByClause = { [field]: order.toLowerCase() };
+        orderByClause[field] = order.toLowerCase();
       }
+    } else {
+      orderByClause = { ScheduledDate: "asc" };
     }
 
     const appointments = await prisma.appointment.findMany({
@@ -133,6 +150,9 @@ exports.getAppointments = async (req, res) => {
       skip: offset,
       take: pageSize,
       orderBy: orderByClause,
+      include: {
+        BloodType: true,
+      },
     });
 
     const totalRecords = await prisma.appointment.count({ where: where });
