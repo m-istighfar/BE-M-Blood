@@ -42,48 +42,95 @@ const validateCreateUpdateBloodDrive = (data) => {
 
 exports.getAllBloodDrives = async (req, res) => {
   try {
-    const validationError = validateBloodDriveQuery(req.query);
-    if (validationError) {
-      return errorResponse(res, validationError);
-    }
-
     const {
+      searchBy,
+      query,
+      institute,
+      scheduledDate,
+      provinceName,
+      designation,
       page,
       limit,
-      filterProvince,
-      filterDesignation,
-      sortBy,
-      sortOrder,
+      orderBy,
     } = req.query;
 
     const pageNumber = parseInt(page) || 1;
     const pageSize = parseInt(limit) || 10;
     const offset = (pageNumber - 1) * pageSize;
-    const sortingCriteria = sortBy || "ScheduledDate";
-    const sortingOrder = sortOrder === "desc" ? "desc" : "asc";
 
-    let whereClause = {};
-    if (filterProvince) {
-      whereClause.ProvinceID = parseInt(filterProvince);
+    let where = {};
+
+    if (institute) {
+      where.Institute = { contains: institute, mode: "insensitive" };
     }
-    if (filterDesignation) {
-      whereClause.Designation = filterDesignation;
+    if (scheduledDate) {
+      const date = new Date(scheduledDate);
+      where.ScheduledDate = {
+        gte: new Date(date.setHours(0, 0, 0, 0)),
+        lte: new Date(date.setHours(23, 59, 59, 999)),
+      };
+    }
+    if (provinceName) {
+      where.Province = {
+        is: {
+          Name: { contains: provinceName, mode: "insensitive" },
+        },
+      };
+    }
+    if (designation) {
+      where.Designation = { contains: designation, mode: "insensitive" };
+    }
+
+    if (searchBy && query) {
+      const searchConditions = [];
+      if (searchBy === "all" || searchBy === "institute") {
+        searchConditions.push({
+          Institute: { contains: query, mode: "insensitive" },
+        });
+      }
+      if (searchBy === "all" || searchBy === "designation") {
+        searchConditions.push({
+          Designation: { contains: query, mode: "insensitive" },
+        });
+      }
+      if (searchBy === "all" || searchBy === "provinceName") {
+        searchConditions.push({
+          Province: {
+            is: {
+              Name: { contains: query, mode: "insensitive" },
+            },
+          },
+        });
+      }
+
+      if (searchConditions.length > 0) {
+        where.OR = searchConditions;
+      }
+    }
+
+    let orderByClause = {};
+
+    if (orderBy) {
+      const [field, order] = orderBy.split(":");
+      if (["asc", "desc"].includes(order.toLowerCase())) {
+        orderByClause[field] = order.toLowerCase();
+      }
+    } else {
+      orderByClause = { ScheduledDate: "asc" };
     }
 
     const bloodDrives = await prisma.bloodDrive.findMany({
+      where: where,
       skip: offset,
       take: pageSize,
-      orderBy: {
-        [sortingCriteria]: sortingOrder,
-      },
-      where: whereClause,
+      orderBy: orderByClause,
       include: {
         Province: true,
         User: true,
       },
     });
 
-    const totalRecords = await prisma.bloodDrive.count({ where: whereClause });
+    const totalRecords = await prisma.bloodDrive.count({ where: where });
 
     successResponse(res, "Blood drives fetched successfully", {
       totalRecords,
