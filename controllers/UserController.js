@@ -3,7 +3,8 @@ const prisma = new PrismaClient();
 const { successResponse, errorResponse } = require("../utils/response");
 const getAllUsers = async (req, res) => {
   try {
-    const { searchBy, query, name, email, phone, location } = req.query;
+    const { searchBy, query, name, email, phone, location, page, limit } =
+      req.query;
 
     let where = {};
 
@@ -17,7 +18,9 @@ const getAllUsers = async (req, res) => {
       where.Phone = { contains: phone, mode: "insensitive" };
     }
     if (location) {
-      where.ProvinceID = { contains: location, mode: "insensitive" };
+      where.Province = {
+        Name: { contains: provinceName, mode: "insensitive" },
+      };
     }
 
     if (searchBy && query) {
@@ -39,7 +42,7 @@ const getAllUsers = async (req, res) => {
       }
       if (searchBy === "all" || searchBy === "location") {
         searchConditions.push({
-          ProvinceID: { contains: query, mode: "insensitive" },
+          Province: { Name: { contains: query, mode: "insensitive" } },
         });
       }
 
@@ -49,11 +52,27 @@ const getAllUsers = async (req, res) => {
       };
     }
 
+    const pageNumber = parseInt(page) || 1;
+    const pageSize = parseInt(limit) || 10;
+    const offset = (pageNumber - 1) * pageSize;
+
     const users = await prisma.user.findMany({
       where: where,
+      include: {
+        Province: true,
+      },
+      skip: offset,
+      take: pageSize,
     });
 
-    successResponse(res, "Users fetched successfully", users);
+    const totalRecords = await prisma.user.count({ where: where });
+    const totalPages = Math.ceil(totalRecords / pageSize);
+
+    successResponse(res, "Users fetched successfully", {
+      users,
+      totalRecords,
+      totalPages,
+    });
   } catch (error) {
     errorResponse(res, error.message);
   }
