@@ -93,40 +93,97 @@ exports.createBloodInventory = async (req, res) => {
   }
 };
 
-exports.getBloodInventories = async (req, res) => {
+exports.getAllInventory = async (req, res) => {
   try {
-    const validationError = validateQueryParameters(req.query);
-    if (validationError) {
-      return errorResponse(res, validationError, 400);
-    }
+    const {
+      searchBy,
+      query,
+      expiriDate,
+      provinceName,
+      bloodType,
+      page,
+      limit,
+      orderBy,
+    } = req.query;
 
-    const { page, limit, bloodTypeID, provinceID } = req.query;
     const pageNumber = parseInt(page) || 1;
     const pageSize = parseInt(limit) || 10;
     const offset = (pageNumber - 1) * pageSize;
 
-    let whereClause = {};
-    if (bloodTypeID) whereClause.BloodTypeID = parseInt(bloodTypeID);
-    if (provinceID) whereClause.ProvinceID = parseInt(provinceID);
+    let where = {};
 
-    const bloodInventories = await prisma.bloodInventory.findMany({
+    if (bloodType) {
+      const bloodTypeRecord = await prisma.bloodType.findFirst({
+        where: { Type: { equals: bloodType, mode: "insensitive" } },
+      });
+      if (bloodTypeRecord) {
+        where.BloodTypeID = bloodTypeRecord.BloodTypeID;
+      }
+    }
+
+    if (expiriDate) {
+      const date = new Date(expiriDate);
+      where.ExpiryDate = {
+        gte: new Date(date.setHours(0, 0, 0, 0)),
+        lte: new Date(date.setHours(23, 59, 59, 999)),
+      };
+    }
+    if (provinceName) {
+      where.Province = {
+        is: {
+          Name: { contains: provinceName, mode: "insensitive" },
+        },
+      };
+    }
+
+    if (searchBy && query) {
+      const searchConditions = [];
+
+      if (searchBy === "all" || searchBy === "provinceName") {
+        searchConditions.push({
+          Province: {
+            is: {
+              Name: { contains: query, mode: "insensitive" },
+            },
+          },
+        });
+      }
+
+      if (searchConditions.length > 0) {
+        where.OR = searchConditions;
+      }
+    }
+
+    let orderByClause = [];
+
+    if (orderBy) {
+      const [field, order] = orderBy.split(":");
+      if (field === "ExpiryDate" || field === "Quantity") {
+        let sortObject = {};
+        sortObject[field] = order.toLowerCase();
+        orderByClause.push(sortObject);
+      }
+    } else {
+      orderByClause = [{ ExpiryDate: "asc" }, { Quantity: "desc" }];
+    }
+
+    const inventory = await prisma.bloodInventory.findMany({
+      where: where,
       skip: offset,
       take: pageSize,
-      where: whereClause,
-      include: { BloodType: true, Province: true },
+      orderBy: orderByClause,
     });
 
-    const totalRecords = await prisma.bloodInventory.count({
-      where: whereClause,
-    });
-    successResponse(res, "Blood inventories fetched successfully", {
+    const totalRecords = await prisma.bloodInventory.count({ where: where });
+
+    successResponse(res, "Inventory fetched successfully", {
       totalRecords,
-      bloodInventories,
+      inventory,
       currentPage: pageNumber,
       totalPages: Math.ceil(totalRecords / pageSize),
     });
   } catch (error) {
-    errorResponse(res, "Error fetching blood inventories: " + error.message);
+    errorResponse(res, "Error fetching inventory: " + error.message, 500);
   }
 };
 
