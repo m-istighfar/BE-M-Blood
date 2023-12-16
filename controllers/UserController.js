@@ -66,7 +66,6 @@ const getAllUsers = async (req, res) => {
     });
 
     const totalRecords = await prisma.user.count({ where: where });
-    const totalPages = Math.ceil(totalRecords / pageSize);
 
     const successResponseData = {
       totalRecords,
