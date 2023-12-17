@@ -3,6 +3,7 @@ require("dotenv").config();
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const cron = require("node-cron");
+const scheduleReminderJob = require("./jobs/reminderJob");
 
 const express = require("express");
 
@@ -109,42 +110,42 @@ app.use(errorFormatter);
 //       res.status(500).send("Failed to send message");
 //     });
 // });
-const sendRemindersForUpcomingAppointments = async () => {
-  try {
-    const oneHourLater = new Date(new Date().getTime() + 60 * 60 * 1000);
+// const sendRemindersForUpcomingAppointments = async () => {
+//   try {
+//     const oneHourLater = new Date(new Date().getTime() + 60 * 60 * 1000);
 
-    const upcomingAppointments = await prisma.appointment.findMany({
-      where: {
-        ScheduledDate: {
-          gte: new Date(),
-          lt: oneHourLater,
-        },
-        Status: "scheduled",
-        ReminderSent: false,
-      },
-      include: {
-        User: true,
-      },
-    });
+//     const upcomingAppointments = await prisma.appointment.findMany({
+//       where: {
+//         ScheduledDate: {
+//           gte: new Date(),
+//           lt: oneHourLater,
+//         },
+//         Status: "scheduled",
+//         ReminderSent: false,
+//       },
+//       include: {
+//         User: true,
+//       },
+//     });
 
-    for (const appointment of upcomingAppointments) {
-      const reminderMessage = `Reminder: You have an appointment scheduled at ${appointment.ScheduledDate.toLocaleString()}.`;
-      await sendWhatsAppMessage(appointment.User.Phone, reminderMessage);
+//     for (const appointment of upcomingAppointments) {
+//       const reminderMessage = `Reminder: You have an appointment scheduled at ${appointment.ScheduledDate.toLocaleString()}.`;
+//       await sendWhatsAppMessage(appointment.User.Phone, reminderMessage);
 
-      // Update the appointment to mark the reminder as sent
-      await prisma.appointment.update({
-        where: {
-          AppointmentID: appointment.AppointmentID,
-        },
-        data: {
-          ReminderSent: true,
-        },
-      });
-    }
-  } catch (error) {
-    console.error("Error sending reminders:", error);
-  }
-};
+//       // Update the appointment to mark the reminder as sent
+//       await prisma.appointment.update({
+//         where: {
+//           AppointmentID: appointment.AppointmentID,
+//         },
+//         data: {
+//           ReminderSent: true,
+//         },
+//       });
+//     }
+//   } catch (error) {
+//     console.error("Error sending reminders:", error);
+//   }
+// };
 
 // const sendRemindersForUpcomingAppointments = async () => {
 //   try {
@@ -167,12 +168,7 @@ const sendRemindersForUpcomingAppointments = async () => {
 //     console.error("Error sending reminders:", error);
 //   }
 
-console.log(sendRemindersForUpcomingAppointments());
-
-cron.schedule("* * * * *", () => {
-  console.log("Checking for upcoming appointments...");
-  sendRemindersForUpcomingAppointments();
-});
+scheduleReminderJob();
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}...`));
