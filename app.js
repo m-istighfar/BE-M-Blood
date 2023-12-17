@@ -169,9 +169,10 @@ const sendRemindersForUpcomingAppointments = async () => {
 
 console.log(sendRemindersForUpcomingAppointments());
 
-// cron.schedule("* * * * *", () => {
-//   console.log("Checking for upcoming appointments...");
-//   sendRemindersForUpcomingAppointments();
-// });
+cron.schedule("* * * * *", () => {
+  console.log("Checking for upcoming appointments...");
+  sendRemindersForUpcomingAppointments();
+});
+
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}...`));
