@@ -32,7 +32,10 @@ const validateRegistration = (data) => {
     email: Joi.string().email().required(),
     password: Joi.string().required(),
     name: Joi.string().required(),
-    phone: Joi.string().required(),
+    phone: Joi.string()
+      .pattern(/^\+62\d+/)
+      .message("Phone number must be in the +62 format")
+      .required(),
     role: Joi.string().optional(),
     provinceId: Joi.number().integer().required(),
     additionalInfo: Joi.string().optional(),

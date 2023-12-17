@@ -120,6 +120,7 @@ const sendRemindersForUpcomingAppointments = async () => {
           lt: oneHourLater,
         },
         Status: "scheduled",
+        ReminderSent: false,
       },
       include: {
         User: true,
@@ -129,6 +130,16 @@ const sendRemindersForUpcomingAppointments = async () => {
     for (const appointment of upcomingAppointments) {
       const reminderMessage = `Reminder: You have an appointment scheduled at ${appointment.ScheduledDate.toLocaleString()}.`;
       await sendWhatsAppMessage(appointment.User.Phone, reminderMessage);
+
+      // Update the appointment to mark the reminder as sent
+      await prisma.appointment.update({
+        where: {
+          AppointmentID: appointment.AppointmentID,
+        },
+        data: {
+          ReminderSent: true,
+        },
+      });
     }
   } catch (error) {
     console.error("Error sending reminders:", error);
@@ -158,9 +169,9 @@ const sendRemindersForUpcomingAppointments = async () => {
 
 console.log(sendRemindersForUpcomingAppointments());
 
-cron.schedule("* * * * *", () => {
-  console.log("Checking for upcoming appointments...");
-  sendRemindersForUpcomingAppointments();
-});
+// cron.schedule("* * * * *", () => {
+//   console.log("Checking for upcoming appointments...");
+//   sendRemindersForUpcomingAppointments();
+// });
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}...`));

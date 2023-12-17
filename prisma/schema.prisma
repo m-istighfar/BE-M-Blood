@@ -67,6 +67,7 @@ model Appointment {
   BloodTypeID     Int
   BloodType       BloodType     @relation(fields: [BloodTypeID], references: [BloodTypeID])
   ScheduledDate   DateTime
+  ReminderSent    Boolean            @default(false)
   Location        String? 
   Status          AppointmentStatus @default(scheduled)
   CreatedAt       DateTime      @default(now())
