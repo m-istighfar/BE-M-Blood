@@ -1,6 +1,9 @@
 const { PrismaClient } = require("@prisma/client");
 const Joi = require("joi");
 const prisma = new PrismaClient();
+const {
+  notifyEligibleDonors,
+} = require("../services/donorNotificationService");
 
 const successResponse = (res, message, data = null, statusCode = 200) => {
   return res.status(statusCode).json(data ? { message, data } : { message });
@@ -257,14 +260,19 @@ exports.createEmergencyRequest = async (req, res) => {
     const inventory = await prisma.bloodInventory.findFirst({
       where: {
         BloodTypeID: bloodTypeRecord.BloodTypeID,
-        Quantity: { gt: 0 },
         ProvinceID: provinceIDForInventoryCheck,
       },
     });
-    if (!inventory) {
+
+    if (!inventory || inventory.Quantity <= 0) {
+      notifyEligibleDonors(
+        bloodTypeRecord.BloodTypeID,
+        provinceIDForInventoryCheck
+      );
+
       return errorResponse(
         res,
-        "Requested blood type currently unavailable in selected area",
+        "Requested blood type currently unavailable in selected area. Notifying eligible donors...",
         404
       );
     }
