@@ -1,11 +1,13 @@
 const prisma = require("../config/db");
 const { sendWhatsAppMessage } = require("./whatsappService");
 
-exports.notifyUsersAboutBloodDrive = async (bloodDriveDetails) => {
+exports.notifyUsersAboutBloodDrive = async (
+  bloodDriveDetails,
+  isNew = true
+) => {
   try {
     const eligibleUsers = await prisma.helpOffer.findMany({
       where: {
-        CanHelpInEmergency: true,
         Location: bloodDriveDetails.Province.Name,
         User: {
           ProvinceID: bloodDriveDetails.ProvinceID,
@@ -16,7 +18,10 @@ exports.notifyUsersAboutBloodDrive = async (bloodDriveDetails) => {
       },
     });
 
-    const message = `Blood Drive Alert: ${
+    const messagePrefix = isNew
+      ? "New Blood Drive Alert:"
+      : "Updated Blood Drive Alert:";
+    const message = `${messagePrefix} ${
       bloodDriveDetails.Designation
     } organized by ${bloodDriveDetails.Institute} at ${
       bloodDriveDetails.Province.Name

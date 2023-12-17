@@ -201,7 +201,7 @@ exports.createBloodDrive = async (req, res) => {
       },
     });
 
-    notifyUsersAboutBloodDrive(newBloodDrive);
+    notifyUsersAboutBloodDrive(newBloodDrive, true);
 
     successResponse(
       res,
@@ -246,7 +246,12 @@ exports.updateBloodDrive = async (req, res) => {
           ? new Date(scheduledDate)
           : existingBloodDrive.ScheduledDate,
       },
+      include: {
+        Province: true,
+      },
     });
+
+    notifyUsersAboutBloodDrive(updatedBloodDrive, false);
 
     successResponse(res, "Blood drive updated successfully", updatedBloodDrive);
   } catch (error) {
