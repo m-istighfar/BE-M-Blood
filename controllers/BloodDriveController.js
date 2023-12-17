@@ -1,6 +1,9 @@
 const { PrismaClient } = require("@prisma/client");
 const Joi = require("joi");
 const prisma = new PrismaClient();
+const {
+  notifyUsersAboutBloodDrive,
+} = require("../services/bloodDriveNotificationService");
 
 const successResponse = (res, message, data = null, statusCode = 200) => {
   return res.status(statusCode).json(data ? { message, data } : { message });
@@ -193,7 +196,12 @@ exports.createBloodDrive = async (req, res) => {
         Designation: designation,
         ScheduledDate: new Date(scheduledDate),
       },
+      include: {
+        Province: true,
+      },
     });
+
+    notifyUsersAboutBloodDrive(newBloodDrive);
 
     successResponse(
       res,
