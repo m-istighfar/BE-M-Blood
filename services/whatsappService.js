@@ -1,24 +1,19 @@
 const twilio = require("twilio");
-const {
-  accountSid,
-  authToken,
-  whatsappNumber,
-} = require("../config/twilioConfig");
 
-const client = new twilio(accountSid, authToken);
+const accountSid = "AC0a91b703fdd066dd92f4be195bddfd24";
+const authToken = "bc37f1c53e8937627f198483b1403a0b";
+const twilioClient = twilio(accountSid, authToken);
+const twilioWhatsAppNumber = "whatsapp:+14155238886";
 
-const sendWhatsAppMessage = async (to, body) => {
+exports.sendWhatsAppMessage = async (phoneNumber, message) => {
   try {
-    const message = await client.messages.create({
-      body: body,
-      from: `whatsapp:${whatsappNumber}`,
-      to: `whatsapp:${to}`,
+    const response = await twilioClient.messages.create({
+      body: message,
+      from: twilioWhatsAppNumber,
+      to: `whatsapp:${phoneNumber}`,
     });
-
-    console.log(`Message sent: ${message.sid}`);
+    console.log("Message sent: ", response.sid);
   } catch (error) {
-    console.error(`Error sending WhatsApp message: ${error}`);
+    console.error("Error sending WhatsApp message:", error);
   }
 };
-
-module.exports = sendWhatsAppMessage;

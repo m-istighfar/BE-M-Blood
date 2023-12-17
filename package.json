@@ -36,6 +36,7 @@
     "moment-timezone": "^0.5.43",
     "mongoose": "^7.4.5",
     "morgan": "^1.10.0",
+    "node-cron": "^3.0.3",
     "nodemailer": "^6.9.6",
     "nodemailer-smtp-transport": "^2.7.4",
     "nodemon": "^3.0.2",
@@ -44,7 +45,7 @@
     "requests": "^0.3.0",
     "rotating-file-stream": "^3.1.1",
     "swagger-ui-express": "^5.0.0",
-    "twilio": "^4.19.3",
+    "twilio": "^4.20.0",
     "yaml": "^2.3.2"
   },
   "devDependencies": {

@@ -6,42 +6,44 @@ const prisma = new PrismaClient();
 
 async function seed() {
   try {
-    const hashedPassword = await bcrypt.hash("123456", 10);
-
-    const userAuths = [];
-    for (let i = 0; i < 10; i++) {
-      const timestamp = Date.now();
-      userAuths.push({
-        Username: `${faker.internet.userName()}_${i}_${timestamp}`,
-        Email: `${i}_${timestamp}@example.com`,
-        Password: hashedPassword,
-        Role: faker.random.arrayElement(["admin", "user"]),
-        Verified: true,
-        CreatedAt: new Date(),
-        UpdatedAt: new Date(),
-      });
-    }
-
     const validProvinceIds = [
       11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 31, 32, 33, 34, 35, 36, 51, 52,
       53, 61, 62, 63, 64, 65, 71, 72, 73, 74, 75, 76, 81, 82, 91, 94,
     ];
 
-    const users = [];
-    for (let i = 0; i < 20; i++) {
-      users.push({
-        ProvinceID: faker.random.arrayElement(validProvinceIds),
-        Name: faker.name.findName(),
-        Phone: faker.phone.phoneNumber(),
-        Email: faker.internet.email(),
-        AdditionalInfo: faker.lorem.sentence(),
-        CreatedAt: new Date(),
-        UpdatedAt: new Date(),
+    for (let i = 0; i < 10; i++) {
+      const timestamp = Date.now();
+      const username = `${faker.internet.userName()}_${i}_${timestamp}`;
+      const email = `${i}_${timestamp}@example.com`;
+      const hashedPassword = await bcrypt.hash("123456", 10);
+
+      const newUserAuth = await prisma.userAuth.create({
+        data: {
+          Username: username,
+          Email: email,
+          Password: hashedPassword,
+          Role: faker.random.arrayElement(["admin", "user"]),
+          Verified: true,
+          CreatedAt: new Date(),
+          UpdatedAt: new Date(),
+        },
+      });
+
+      await prisma.user.create({
+        data: {
+          ProvinceID: faker.random.arrayElement(validProvinceIds),
+          Name: faker.name.findName(),
+          Phone: faker.phone.phoneNumber(),
+          Email: email,
+          AdditionalInfo: faker.lorem.sentence(),
+          CreatedAt: new Date(),
+          UpdatedAt: new Date(),
+          UserAuth: {
+            connect: { UserAuthID: newUserAuth.UserAuthID },
+          },
+        },
       });
     }
-
-    await prisma.userAuth.createMany({ data: userAuths });
-    await prisma.user.createMany({ data: users });
 
     const createdUsers = await prisma.user.findMany();
     const userIds = createdUsers.map((user) => user.UserID);

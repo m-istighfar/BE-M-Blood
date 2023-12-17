@@ -95,38 +95,40 @@ const register = async (req, res) => {
       return errorResponse(res, "Invalid ProvinceID");
     }
 
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.$transaction(async (prisma) => {
+      const verificationToken = crypto.randomBytes(32).toString("hex");
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUserAuth = await prisma.userAuth.create({
-      data: {
-        Username: username,
-        Email: email,
-        Password: hashedPassword,
-        VerificationToken: verificationToken,
-        Role: role || "user",
-      },
-    });
-
-    const newUser = await prisma.user.create({
-      data: {
-        ProvinceID: parseInt(provinceId),
-        Name: name,
-        Email: email,
-        Phone: phone,
-        AdditionalInfo: additionalInfo,
-        UserAuth: {
-          connect: { UserAuthID: newUserAuth.UserAuthID },
+      const newUserAuth = await prisma.userAuth.create({
+        data: {
+          Username: username,
+          Email: email,
+          Password: hashedPassword,
+          VerificationToken: verificationToken,
+          Role: role || "user",
         },
-      },
-    });
+      });
 
-    await sendVerificationEmail(email, verificationToken);
+      const newUser = await prisma.user.create({
+        data: {
+          ProvinceID: parseInt(provinceId),
+          Name: name,
+          Email: email,
+          Phone: phone,
+          AdditionalInfo: additionalInfo,
+          UserAuth: {
+            connect: { UserAuthID: newUserAuth.UserAuthID },
+          },
+        },
+      });
 
-    successResponse(res, "User successfully registered", {
-      userId: newUser.UserID,
-      username,
-      email,
+      await sendVerificationEmail(email, verificationToken);
+
+      successResponse(res, "User successfully registered", {
+        userId: newUser.UserID,
+        username,
+        email,
+      });
     });
   } catch (error) {
     errorResponse(res, error.message);
