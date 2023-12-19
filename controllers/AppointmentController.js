@@ -517,3 +517,35 @@ exports.updateAppointment = async (req, res) => {
     );
   }
 };
+
+exports.deleteAppointment = async (req, res) => {
+  try {
+    // const userId = req.user.id;
+    // const userRole = req.user.role;
+    const { appointmentId } = req.params;
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { AppointmentID: parseInt(appointmentId) },
+    });
+
+    if (!appointment) {
+      return errorResponse(res, "Appointment not found", 404);
+    }
+
+    // if (userRole !== "admin" && appointment.UserID !== userId) {
+    //   return errorResponse(res, "Unauthorized to delete this appointment", 401);
+    // }
+
+    await prisma.appointment.delete({
+      where: { AppointmentID: parseInt(appointmentId) },
+    });
+
+    successResponse(res, "Appointment deleted successfully");
+  } catch (error) {
+    errorResponse(
+      res,
+      "An error occurred while deleting the appointment: " + error.message,
+      500
+    );
+  }
+};

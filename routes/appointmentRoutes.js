@@ -9,6 +9,10 @@ router.post("/create", AppointmentController.createAppointment);
 router.post("/reschedule", AppointmentController.rescheduleAppointment);
 router.post("/cancel", AppointmentController.cancelAppointment);
 router.put("/update/:appointmentId", AppointmentController.updateAppointment);
+router.delete(
+  "/delete/:appointmentId",
+  AppointmentController.deleteAppointment
+);
 
 router.post(
   "/complete",
