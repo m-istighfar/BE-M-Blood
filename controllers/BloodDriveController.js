@@ -32,7 +32,7 @@ const validateBloodDriveQuery = (data) => {
 const validateCreateUpdateBloodDrive = (data) => {
   const schema = Joi.object({
     institute: Joi.string().required(),
-    provinceId: Joi.number().integer().required(),
+    provinceName: Joi.string().required(),
     designation: Joi.string().required(),
     scheduledDate: Joi.date().min("now").required(),
   });
@@ -171,28 +171,26 @@ exports.getBloodDriveById = async (req, res) => {
 exports.createBloodDrive = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { institute, provinceId, designation, scheduledDate } = req.body;
+    const { institute, provinceName, designation, scheduledDate } = req.body; // Updated to provinceName
 
     const validationError = validateCreateUpdateBloodDrive(req.body);
     if (validationError) {
       return errorResponse(res, validationError);
     }
 
-    const provinceIdInt = parseInt(provinceId, 10);
-
-    const provinceExists = await prisma.province.findUnique({
-      where: { ProvinceID: provinceIdInt },
+    const province = await prisma.province.findFirst({
+      where: { Name: provinceName },
     });
 
-    if (!provinceExists) {
-      return errorResponse(res, "Invalid ProvinceID", 400);
+    if (!province) {
+      return errorResponse(res, "Invalid province name", 400);
     }
 
     const newBloodDrive = await prisma.bloodDrive.create({
       data: {
         UserID: userId,
         Institute: institute,
-        ProvinceID: provinceIdInt,
+        ProvinceID: province.ProvinceID,
         Designation: designation,
         ScheduledDate: new Date(scheduledDate),
       },
