@@ -266,7 +266,6 @@ exports.getTotalQuantityByTypeAndLocation = async (req, res) => {
     const { provinceName } = req.query;
     let provinceFilter = {};
 
-    // Apply province filter if provided
     if (provinceName) {
       const filteredProvince = await prisma.province.findFirst({
         where: { Name: { equals: provinceName, mode: "insensitive" } },
@@ -277,13 +276,11 @@ exports.getTotalQuantityByTypeAndLocation = async (req, res) => {
       provinceFilter.ProvinceID = filteredProvince.ProvinceID;
     }
 
-    // Fetch all blood types and relevant provinces
     const bloodTypes = await prisma.bloodType.findMany();
     const provinces = provinceName
       ? [provinceFilter]
       : await prisma.province.findMany();
 
-    // Generate all combinations of blood types and provinces
     const combinations = provinces.flatMap((province) =>
       bloodTypes.map((bloodType) => ({
         bloodTypeID: bloodType.BloodTypeID,
@@ -293,7 +290,6 @@ exports.getTotalQuantityByTypeAndLocation = async (req, res) => {
       }))
     );
 
-    // Aggregate existing inventories
     const aggregateData = await prisma.bloodInventory.groupBy({
       by: ["BloodTypeID", "ProvinceID"],
       _sum: {
@@ -302,7 +298,6 @@ exports.getTotalQuantityByTypeAndLocation = async (req, res) => {
       where: provinceFilter,
     });
 
-    // Combine data
     const enhancedData = combinations.map((combination) => {
       const aggregate = aggregateData.find(
         (agg) =>
