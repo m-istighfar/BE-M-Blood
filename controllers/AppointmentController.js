@@ -44,6 +44,22 @@ const validateCreateAppointment = (data) => {
     : null;
 };
 
+const validateUpdateAppointment = (data) => {
+  const schema = Joi.object({
+    bloodType: Joi.string().optional(),
+    scheduledDate: Joi.date().min("now").optional(),
+    location: Joi.string().optional(),
+    status: Joi.string()
+      .valid("scheduled", "completed", "cancelled", "rescheduled")
+      .optional(),
+  });
+
+  const { error } = schema.validate(data, { abortEarly: false });
+  return error
+    ? error.details.map((detail) => detail.message).join(", ")
+    : null;
+};
+
 const validateRescheduleAppointment = (data) => {
   const schema = Joi.object({
     appointmentId: Joi.number().integer().required(),
@@ -242,7 +258,6 @@ exports.createAppointment = async (req, res) => {
         where: { Name: { equals: location, mode: "insensitive" } },
       });
 
-      // Check if the provided location is a valid province name
       if (!provinceExists) {
         return errorResponse(res, "Invalid location: Province not found");
       }
@@ -449,6 +464,55 @@ exports.completeAppointment = async (req, res) => {
     errorResponse(
       res,
       "An error occurred while completing the appointment: " + error.message,
+      500
+    );
+  }
+};
+
+exports.updateAppointment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { appointmentId } = req.params;
+    const { bloodType, scheduledDate, location, status } = req.body;
+
+    const validationError = validateUpdateAppointment(req.body);
+    if (validationError) {
+      return errorResponse(res, validationError);
+    }
+
+    let bloodTypeId = null;
+    if (bloodType) {
+      const bloodTypeRecord = await prisma.bloodType.findFirst({
+        where: { Type: bloodType },
+      });
+
+      if (!bloodTypeRecord) {
+        return errorResponse(res, "Invalid blood type", 400);
+      }
+
+      bloodTypeId = bloodTypeRecord.BloodTypeID;
+    }
+
+    const updateData = {};
+    if (bloodTypeId) updateData.BloodTypeID = bloodTypeId;
+    if (scheduledDate) updateData.ScheduledDate = new Date(scheduledDate);
+    if (location) updateData.Location = location;
+    if (status) updateData.Status = status;
+
+    const updatedAppointment = await prisma.appointment.update({
+      where: { AppointmentID: parseInt(appointmentId) },
+      data: updateData,
+    });
+
+    successResponse(
+      res,
+      "Appointment updated successfully",
+      updatedAppointment
+    );
+  } catch (error) {
+    errorResponse(
+      res,
+      "An error occurred while updating the appointment: " + error.message,
       500
     );
   }

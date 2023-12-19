@@ -8,6 +8,7 @@ router.get("/:appointmentId", AppointmentController.getAppointmentById);
 router.post("/create", AppointmentController.createAppointment);
 router.post("/reschedule", AppointmentController.rescheduleAppointment);
 router.post("/cancel", AppointmentController.cancelAppointment);
+router.put("/update/:appointmentId", AppointmentController.updateAppointment);
 
 router.post(
   "/complete",
