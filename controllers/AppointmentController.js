@@ -237,20 +237,14 @@ exports.createAppointment = async (req, res) => {
 
     const userProvince = userWithProvince.Province;
 
-    if (
-      location &&
-      location.toLowerCase() !== userProvince.Capital.toLowerCase()
-    ) {
-      const provinceLocations = await prisma.province.findUnique({
-        where: { ProvinceID: userProvince.ProvinceID },
-        include: { Users: { select: { Name: true } } },
+    if (location) {
+      const provinceExists = await prisma.province.findFirst({
+        where: { Name: { equals: location, mode: "insensitive" } },
       });
 
-      const provinceUserNames = provinceLocations.Users.map((user) =>
-        user.Name.toLowerCase()
-      );
-      if (!provinceUserNames.includes(location.toLowerCase())) {
-        return errorResponse(res, "Invalid location");
+      // Check if the provided location is a valid province name
+      if (!provinceExists) {
+        return errorResponse(res, "Invalid location: Province not found");
       }
     }
 
@@ -282,7 +276,7 @@ exports.createAppointment = async (req, res) => {
         UserID: userId,
         BloodTypeID: bloodTypeRecord.BloodTypeID,
         ScheduledDate: appointmentDate,
-        Location: location || userProvince.Capital,
+        Location: location || userProvince.Name,
       },
     });
 
