@@ -52,6 +52,9 @@ const validateUpdateEmergencyRequest = (data) => {
     additionalInfo: Joi.string().allow("").optional(),
     bloodType: Joi.string().optional(),
     location: Joi.string().optional(),
+    status: Joi.string() // New field for status
+      .valid("pending", "inProgress", "fulfilled", "expired", "cancelled")
+      .optional(),
   });
 
   const { error } = schema.validate(data, { abortEarly: false });
@@ -307,7 +310,7 @@ exports.createEmergencyRequest = async (req, res) => {
 exports.updateEmergencyRequest = async (req, res) => {
   try {
     const { emergencyRequestId } = req.params;
-    const { additionalInfo, bloodType, location } = req.body;
+    const { additionalInfo, bloodType, location, status } = req.body;
     const userId = req.user.id;
     const userRole = req.user.role;
 
@@ -327,13 +330,13 @@ exports.updateEmergencyRequest = async (req, res) => {
       return errorResponse(res, "Emergency request not found", 404);
     }
 
-    if (emergencyRequest.UserID !== userId && userRole !== "admin") {
-      return errorResponse(
-        res,
-        "Unauthorized to update this emergency request",
-        403
-      );
-    }
+    // if (emergencyRequest.UserID !== userId && userRole !== "admin") {
+    //   return errorResponse(
+    //     res,
+    //     "Unauthorized to update this emergency request",
+    //     403
+    //   );
+    // }
 
     let bloodTypeID = emergencyRequest.BloodTypeID;
     let provinceID;
@@ -375,13 +378,19 @@ exports.updateEmergencyRequest = async (req, res) => {
       );
     }
 
+    let updateData = {
+      AdditionalInfo: additionalInfo || emergencyRequest.AdditionalInfo,
+      BloodTypeID: bloodTypeID,
+      Location: location || emergencyRequest.Location,
+    };
+
+    if (status) {
+      updateData.Status = status;
+    }
+
     const updatedEmergencyRequest = await prisma.emergencyRequest.update({
       where: { RequestID: parseInt(emergencyRequestId) },
-      data: {
-        AdditionalInfo: additionalInfo || emergencyRequest.AdditionalInfo,
-        BloodTypeID: bloodTypeID,
-        Location: location || emergencyRequest.Location,
-      },
+      data: updateData,
     });
 
     successResponse(
