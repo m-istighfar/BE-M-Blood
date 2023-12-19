@@ -67,7 +67,7 @@ app.use(
   helpOfferRoutes
 );
 
-app.use("/blood-inventory", authMiddleware, bloodInventoryRoutes);
+app.use("/blood-inventory", bloodInventoryRoutes);
 
 app.use("/blood-drive", authMiddleware, bloodDriveRoutes);
 app.use("/province", provinceRoutes);

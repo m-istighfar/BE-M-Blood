@@ -260,3 +260,74 @@ exports.deleteBloodInventory = async (req, res) => {
     errorResponse(res, "Error deleting blood inventory: " + error.message);
   }
 };
+
+exports.getTotalQuantityByTypeAndLocation = async (req, res) => {
+  try {
+    const { provinceName } = req.query;
+    let provinceFilter = {};
+
+    // Apply province filter if provided
+    if (provinceName) {
+      const filteredProvince = await prisma.province.findFirst({
+        where: { Name: { equals: provinceName, mode: "insensitive" } },
+      });
+      if (!filteredProvince) {
+        return errorResponse(res, "Province not found", 404);
+      }
+      provinceFilter.ProvinceID = filteredProvince.ProvinceID;
+    }
+
+    // Fetch all blood types and relevant provinces
+    const bloodTypes = await prisma.bloodType.findMany();
+    const provinces = provinceName
+      ? [provinceFilter]
+      : await prisma.province.findMany();
+
+    // Generate all combinations of blood types and provinces
+    const combinations = provinces.flatMap((province) =>
+      bloodTypes.map((bloodType) => ({
+        bloodTypeID: bloodType.BloodTypeID,
+        provinceID: province.ProvinceID,
+        bloodType: bloodType.Type,
+        province: province.Name,
+      }))
+    );
+
+    // Aggregate existing inventories
+    const aggregateData = await prisma.bloodInventory.groupBy({
+      by: ["BloodTypeID", "ProvinceID"],
+      _sum: {
+        Quantity: true,
+      },
+      where: provinceFilter,
+    });
+
+    // Combine data
+    const enhancedData = combinations.map((combination) => {
+      const aggregate = aggregateData.find(
+        (agg) =>
+          agg.BloodTypeID === combination.bloodTypeID &&
+          agg.ProvinceID === combination.provinceID
+      );
+
+      return {
+        bloodType: combination.bloodType,
+        province: combination.province,
+        totalQuantity: aggregate ? aggregate._sum.Quantity : 0,
+      };
+    });
+
+    successResponse(
+      res,
+      "Total quantity by blood type and location fetched successfully",
+      enhancedData
+    );
+  } catch (error) {
+    errorResponse(
+      res,
+      "Error fetching total quantity by blood type and location: " +
+        error.message
+    );
+  }
+};
+``;
