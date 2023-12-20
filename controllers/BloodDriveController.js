@@ -215,7 +215,7 @@ exports.createBloodDrive = async (req, res) => {
 exports.updateBloodDrive = async (req, res) => {
   try {
     const { bloodDriveId } = req.params;
-    const { institute, provinceId, designation, scheduledDate } = req.body;
+    const { institute, provinceName, designation, scheduledDate } = req.body;
 
     const validationError = validateCreateUpdateBloodDrive(req.body);
     if (validationError) {
@@ -232,13 +232,21 @@ exports.updateBloodDrive = async (req, res) => {
       return errorResponse(res, "Blood drive not found", 404);
     }
 
+    let provinceId = existingBloodDrive.ProvinceID;
+    if (provinceName) {
+      const province = await prisma.province.findFirst({
+        where: { Name: provinceName },
+      });
+      if (!province) {
+        return errorResponse(res, "Province not found", 404);
+      }
+      provinceId = province.ProvinceID; // Use the ID of the found province
+    }
     const updatedBloodDrive = await prisma.bloodDrive.update({
       where: { DriveID: bloodDriveIdInt },
       data: {
         Institute: institute || existingBloodDrive.Institute,
-        ProvinceID: provinceId
-          ? parseInt(provinceId, 10)
-          : existingBloodDrive.ProvinceID,
+        ProvinceID: provinceId, // Updated with the province ID found
         Designation: designation || existingBloodDrive.Designation,
         ScheduledDate: scheduledDate
           ? new Date(scheduledDate)
