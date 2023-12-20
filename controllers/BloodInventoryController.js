@@ -172,6 +172,10 @@ exports.getAllInventory = async (req, res) => {
       skip: offset,
       take: pageSize,
       orderBy: orderByClause,
+      include: {
+        BloodType: true,
+        Province: true,
+      },
     });
 
     const totalRecords = await prisma.bloodInventory.count({ where: where });

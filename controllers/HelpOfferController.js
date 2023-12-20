@@ -264,6 +264,10 @@ exports.updateHelpOffer = async (req, res) => {
         Reason: reason ?? existingHelpOffer.Reason,
         Location: location ?? existingHelpOffer.Location,
       },
+      include: {
+        User: true,
+        BloodType: true,
+      },
     });
 
     return successResponse(
