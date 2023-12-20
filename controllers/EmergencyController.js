@@ -410,8 +410,8 @@ exports.updateEmergencyRequest = async (req, res) => {
 exports.deleteEmergencyRequest = async (req, res) => {
   try {
     const { emergencyRequestId } = req.params;
-    const userId = req.user.id;
-    const userRole = req.user.role;
+    // const userId = req.user.id;
+    // const userRole = req.user.role;
 
     const emergencyRequest = await prisma.emergencyRequest.findUnique({
       where: { RequestID: parseInt(emergencyRequestId) },
@@ -421,13 +421,13 @@ exports.deleteEmergencyRequest = async (req, res) => {
       return errorResponse(res, "Emergency request not found", 404);
     }
 
-    if (emergencyRequest.UserID !== userId && userRole !== "admin") {
-      return errorResponse(
-        res,
-        "Unauthorized to delete this emergency request",
-        403
-      );
-    }
+    // if (emergencyRequest.UserID !== userId && userRole !== "admin") {
+    //   return errorResponse(
+    //     res,
+    //     "Unauthorized to delete this emergency request",
+    //     403
+    //   );
+    // }
 
     await prisma.emergencyRequest.delete({
       where: { RequestID: parseInt(emergencyRequestId) },
