@@ -85,6 +85,10 @@ exports.createBloodInventory = async (req, res) => {
         ExpiryDate: defaultExpiryDate,
         ProvinceID: provinceID,
       },
+      include: {
+        BloodType: true,
+        Province: true,
+      },
     });
 
     successResponse(res, "Blood inventory added successfully", newInventory);
