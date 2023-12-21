@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const e = require("express");
+const redis = require("../config/redis");
 const prisma = new PrismaClient();
 const Joi = require("joi");
 
@@ -88,6 +89,17 @@ exports.getAppointments = async (req, res) => {
       orderBy,
     } = req.query;
 
+    const cacheKey = `appointments:${JSON.stringify(req.query)}`;
+    const cachedAppointments = await redis.get(cacheKey);
+
+    if (cachedAppointments) {
+      return successResponse(
+        res,
+        "Appointments fetched from cache",
+        JSON.parse(cachedAppointments)
+      );
+    }
+
     const pageNumber = parseInt(page) || 1;
     const pageSize = parseInt(limit) || 10;
     const offset = (pageNumber - 1) * pageSize;
@@ -172,6 +184,12 @@ exports.getAppointments = async (req, res) => {
     });
 
     const totalRecords = await prisma.appointment.count({ where: where });
+
+    await redis.setex(
+      cacheKey,
+      3600,
+      JSON.stringify({ totalRecords, appointments })
+    );
 
     successResponse(res, "Appointments fetched successfully", {
       totalRecords,

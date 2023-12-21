@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const redis = require("./config/redis");
 const cron = require("node-cron");
 const scheduleReminderJob = require("./jobs/reminderJob");
 

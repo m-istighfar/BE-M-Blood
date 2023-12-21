@@ -28,6 +28,7 @@
     "faker": "^5.5.3",
     "firebase-functions": "^4.4.1",
     "helmet": "^7.0.0",
+    "ioredis": "^5.3.2",
     "joi": "^17.11.0",
     "jsonwebtoken": "^9.0.1",
     "localtunnel": "^2.0.2",
