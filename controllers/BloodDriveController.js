@@ -287,3 +287,19 @@ exports.deleteBloodDrive = async (req, res) => {
     errorResponse(res, "Error deleting blood drive: " + error.message, 500);
   }
 };
+
+exports.getTotalBloodDrives = async (req, res) => {
+  try {
+    const totalBloodDrives = await prisma.bloodDrive.count();
+
+    successResponse(res, "Total number of blood drives fetched successfully", {
+      totalBloodDrives,
+    });
+  } catch (error) {
+    errorResponse(
+      res,
+      "Error fetching the total number of blood drives: " + error.message,
+      500
+    );
+  }
+};
