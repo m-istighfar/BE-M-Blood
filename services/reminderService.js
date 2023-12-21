@@ -1,4 +1,4 @@
-const prisma = require("../config/db"); // Assuming you have a db.js in config for PrismaClient
+const prisma = require("../config/db");
 const { sendWhatsAppMessage } = require("./whatsappService");
 
 exports.sendRemindersForUpcomingAppointments = async () => {

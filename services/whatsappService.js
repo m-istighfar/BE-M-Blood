@@ -1,7 +1,9 @@
 const twilio = require("twilio");
+require("dotenv").config();
 
-const accountSid = "AC0a91b703fdd066dd92f4be195bddfd24";
-const authToken = "bc37f1c53e8937627f198483b1403a0b";
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+
 const twilioClient = twilio(accountSid, authToken);
 const twilioWhatsAppNumber = "whatsapp:+14155238886";
 
