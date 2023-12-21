@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const { successResponse, errorResponse } = require("../utils/response");
+const redis = require("../config/redis");
 const getAllUsers = async (req, res) => {
   try {
     const { searchBy, query, name, email, phone, location, page, limit } =

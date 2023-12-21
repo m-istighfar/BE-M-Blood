@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const Joi = require("joi");
+const redis = require("../config/redis");
 
 const successResponse = (res, message, data = null) => {
   return res.status(200).json({ message, data });

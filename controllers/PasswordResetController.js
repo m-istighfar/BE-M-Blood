@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const Joi = require("joi");
 const { sendPasswordResetEmail } = require("../services/mailService");
+const redis = require("../config/redis");
 
 const successResponse = (res, message, data = null, statusCode = 200) => {
   return res.status(statusCode).json(data ? { message, data } : { message });

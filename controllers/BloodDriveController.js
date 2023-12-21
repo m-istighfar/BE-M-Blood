@@ -4,6 +4,14 @@ const prisma = new PrismaClient();
 const {
   notifyUsersAboutBloodDrive,
 } = require("../services/bloodDriveNotificationService");
+const redis = require("../config/redis");
+
+const invalidateBloodDrivesCache = async () => {
+  const keys = await redis.keys("bloodDrives:*");
+  keys.forEach(async (key) => {
+    await redis.del(key);
+  });
+};
 
 const successResponse = (res, message, data = null, statusCode = 200) => {
   return res.status(statusCode).json(data ? { message, data } : { message });
@@ -56,6 +64,17 @@ exports.getAllBloodDrives = async (req, res) => {
       limit,
       orderBy,
     } = req.query;
+
+    const cacheKey = `bloodDrives:${JSON.stringify(req.query)}`;
+    const cachedBloodDrives = await redis.get(cacheKey);
+
+    if (cachedBloodDrives) {
+      return successResponse(
+        res,
+        "Blood drives fetched from cache",
+        JSON.parse(cachedBloodDrives)
+      );
+    }
 
     const pageNumber = parseInt(page) || 1;
     const pageSize = parseInt(limit) || 10;
@@ -134,13 +153,16 @@ exports.getAllBloodDrives = async (req, res) => {
     });
 
     const totalRecords = await prisma.bloodDrive.count({ where: where });
-
-    successResponse(res, "Blood drives fetched successfully", {
+    const response = {
       totalRecords,
       bloodDrives,
       currentPage: pageNumber,
       totalPages: Math.ceil(totalRecords / pageSize),
-    });
+    };
+
+    await redis.setex(cacheKey, 3600, JSON.stringify(response));
+
+    successResponse(res, "Blood drives fetched successfully", response);
   } catch (error) {
     errorResponse(res, "Error fetching blood drives: " + error.message, 500);
   }
@@ -198,6 +220,8 @@ exports.createBloodDrive = async (req, res) => {
         Province: true,
       },
     });
+
+    await invalidateBloodDrivesCache();
 
     notifyUsersAboutBloodDrive(newBloodDrive, true);
 
@@ -257,6 +281,8 @@ exports.updateBloodDrive = async (req, res) => {
       },
     });
 
+    await invalidateBloodDrivesCache();
+
     notifyUsersAboutBloodDrive(updatedBloodDrive, false);
 
     successResponse(res, "Blood drive updated successfully", updatedBloodDrive);
@@ -281,6 +307,8 @@ exports.deleteBloodDrive = async (req, res) => {
     await prisma.bloodDrive.delete({
       where: { DriveID: bloodDriveIdInt },
     });
+
+    await invalidateBloodDrivesCache();
 
     successResponse(res, "Blood drive deleted successfully");
   } catch (error) {

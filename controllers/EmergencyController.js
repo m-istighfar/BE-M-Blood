@@ -4,6 +4,7 @@ const prisma = new PrismaClient();
 const {
   notifyEligibleDonors,
 } = require("../services/donorNotificationService");
+const redis = require("../config/redis");
 
 const successResponse = (res, message, data = null, statusCode = 200) => {
   return res.status(statusCode).json(data ? { message, data } : { message });
