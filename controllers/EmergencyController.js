@@ -6,6 +6,13 @@ const {
 } = require("../services/donorNotificationService");
 const redis = require("../config/redis");
 
+const invalidateEmergencyRequestsCache = async () => {
+  const keys = await redis.keys("emergencyRequests:*");
+  keys.forEach(async (key) => {
+    await redis.del(key);
+  });
+};
+
 const successResponse = (res, message, data = null, statusCode = 200) => {
   return res.status(statusCode).json(data ? { message, data } : { message });
 };
@@ -90,6 +97,17 @@ exports.getAllEmergencyRequests = async (req, res) => {
       limit,
       orderBy,
     } = req.query;
+
+    const cacheKey = `emergencyRequests:all:${JSON.stringify(req.query)}`;
+    const cachedRequests = await redis.get(cacheKey);
+
+    if (cachedRequests) {
+      return successResponse(
+        res,
+        "Emergency requests fetched from cache",
+        JSON.parse(cachedRequests)
+      );
+    }
 
     const pageNumber = parseInt(page) || 1;
     const pageSize = parseInt(limit) || 10;
@@ -178,12 +196,16 @@ exports.getAllEmergencyRequests = async (req, res) => {
 
     const totalRecords = await prisma.emergencyRequest.count({ where: where });
 
-    successResponse(res, "Emergency requests fetched successfully", {
+    const response = {
       totalRecords,
       emergencyRequests,
       currentPage: pageNumber,
       totalPages: Math.ceil(totalRecords / pageSize),
-    });
+    };
+
+    await redis.setex(cacheKey, 3600, JSON.stringify(response));
+
+    successResponse(res, "Emergency requests fetched successfully", response);
   } catch (error) {
     errorResponse(
       res,
@@ -293,6 +315,8 @@ exports.createEmergencyRequest = async (req, res) => {
       },
     });
 
+    await invalidateEmergencyRequestsCache();
+
     successResponse(
       res,
       "Emergency blood request created successfully",
@@ -394,6 +418,8 @@ exports.updateEmergencyRequest = async (req, res) => {
       data: updateData,
     });
 
+    await invalidateEmergencyRequestsCache();
+
     successResponse(
       res,
       "Emergency request updated successfully",
@@ -433,6 +459,8 @@ exports.deleteEmergencyRequest = async (req, res) => {
     await prisma.emergencyRequest.delete({
       where: { RequestID: parseInt(emergencyRequestId) },
     });
+
+    await invalidateEmergencyRequestsCache();
 
     successResponse(res, "Emergency request deleted successfully");
   } catch (error) {
@@ -477,6 +505,8 @@ exports.updateEmergencyRequestStatus = async (req, res) => {
       data: { Status: newStatus },
     });
 
+    await invalidateEmergencyRequestsCache();
+
     return successResponse(
       res,
       "Emergency request status updated successfully",
@@ -493,7 +523,19 @@ exports.updateEmergencyRequestStatus = async (req, res) => {
 
 exports.getTotalEmergencyRequests = async (req, res) => {
   try {
+    const cacheKey = "emergencyRequests:total";
+    const cachedTotal = await redis.get(cacheKey);
+
+    if (cachedTotal) {
+      return successResponse(
+        res,
+        "Total number of emergency requests fetched from cache",
+        { totalEmergencyRequests: JSON.parse(cachedTotal) }
+      );
+    }
     const totalEmergencyRequests = await prisma.emergencyRequest.count();
+
+    await redis.setex(cacheKey, 3600, JSON.stringify(totalEmergencyRequests));
 
     successResponse(
       res,
