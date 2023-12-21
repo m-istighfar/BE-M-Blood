@@ -191,19 +191,17 @@ exports.getAppointments = async (req, res) => {
     });
 
     const totalRecords = await prisma.appointment.count({ where: where });
-
-    await redis.setex(
-      cacheKey,
-      3600,
-      JSON.stringify({ totalRecords, appointments })
-    );
-
-    successResponse(res, "Appointments fetched successfully", {
+    const totalPages = Math.ceil(totalRecords / pageSize);
+    const response = {
       totalRecords,
       appointments,
       currentPage: pageNumber,
-      totalPages: Math.ceil(totalRecords / pageSize),
-    });
+      totalPages,
+    };
+
+    await redis.setex(cacheKey, 3600, JSON.stringify(response));
+
+    successResponse(res, "Appointments fetched successfully", response);
   } catch (error) {
     errorResponse(
       res,
