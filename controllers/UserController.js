@@ -2,10 +2,29 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const { successResponse, errorResponse } = require("../utils/response");
 const redis = require("../config/redis");
+
+const invalidateUserCache = async () => {
+  const keys = await redis.keys("users:*");
+  keys.forEach(async (key) => {
+    await redis.del(key);
+  });
+};
+
 const getAllUsers = async (req, res) => {
   try {
     const { searchBy, query, name, email, phone, location, page, limit } =
       req.query;
+
+    const cacheKey = `users:all:${JSON.stringify(req.query)}`;
+    const cachedUsers = await redis.get(cacheKey);
+
+    if (cachedUsers) {
+      return successResponse(
+        res,
+        "Users fetched from cache",
+        JSON.parse(cachedUsers)
+      );
+    }
 
     let where = {};
 
@@ -67,15 +86,16 @@ const getAllUsers = async (req, res) => {
     });
 
     const totalRecords = await prisma.user.count({ where: where });
-
-    const successResponseData = {
+    const responseData = {
       totalRecords,
       users,
       currentPage: pageNumber,
       totalPages: Math.ceil(totalRecords / pageSize),
     };
 
-    successResponse(res, "Users fetched successfully", successResponseData);
+    await redis.setex(cacheKey, 3600, JSON.stringify(responseData));
+
+    successResponse(res, "Users fetched successfully", responseData);
   } catch (error) {
     errorResponse(res, error.message);
   }
