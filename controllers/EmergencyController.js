@@ -489,3 +489,21 @@ exports.updateEmergencyRequestStatus = async (req, res) => {
     );
   }
 };
+
+exports.getTotalEmergencyRequests = async (req, res) => {
+  try {
+    const totalEmergencyRequests = await prisma.emergencyRequest.count();
+
+    successResponse(
+      res,
+      "Total number of emergency requests fetched successfully",
+      { totalEmergencyRequests }
+    );
+  } catch (error) {
+    errorResponse(
+      res,
+      "Error fetching the total number of emergency requests: " + error.message,
+      500
+    );
+  }
+};

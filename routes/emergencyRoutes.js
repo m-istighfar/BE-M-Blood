@@ -4,6 +4,7 @@ const EmergencyController = require("../controllers/EmergencyController");
 
 router.post("/request", EmergencyController.createEmergencyRequest);
 router.get("/", EmergencyController.getAllEmergencyRequests);
+router.get("/get/total", EmergencyController.getTotalEmergencyRequests);
 router.get("/:emergencyRequestId", EmergencyController.getEmergencyRequestById);
 router.put("/:emergencyRequestId", EmergencyController.updateEmergencyRequest);
 router.delete(
