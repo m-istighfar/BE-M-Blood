@@ -3,6 +3,13 @@ const Joi = require("joi");
 const prisma = new PrismaClient();
 const redis = require("../config/redis");
 
+const invalidateBloodInventoryCache = async () => {
+  const keys = await redis.keys("bloodInventory:*");
+  keys.forEach(async (key) => {
+    await redis.del(key);
+  });
+};
+
 const successResponse = (res, message, data) => {
   return res.status(200).json({ message, data });
 };
@@ -92,6 +99,8 @@ exports.createBloodInventory = async (req, res) => {
       },
     });
 
+    await invalidateBloodInventoryCache();
+
     successResponse(res, "Blood inventory added successfully", newInventory);
   } catch (error) {
     errorResponse(res, "Error creating blood inventory: " + error.message);
@@ -110,6 +119,17 @@ exports.getAllInventory = async (req, res) => {
       limit,
       orderBy,
     } = req.query;
+
+    const cacheKey = `bloodInventory:all:${JSON.stringify(req.query)}`;
+    const cachedInventory = await redis.get(cacheKey);
+
+    if (cachedInventory) {
+      return successResponse(
+        res,
+        "Inventory fetched from cache",
+        JSON.parse(cachedInventory)
+      );
+    }
 
     const pageNumber = parseInt(page) || 1;
     const pageSize = parseInt(limit) || 10;
@@ -184,13 +204,16 @@ exports.getAllInventory = async (req, res) => {
     });
 
     const totalRecords = await prisma.bloodInventory.count({ where: where });
-
-    successResponse(res, "Inventory fetched successfully", {
+    const response = {
       totalRecords,
       inventory,
       currentPage: pageNumber,
       totalPages: Math.ceil(totalRecords / pageSize),
-    });
+    };
+
+    await redis.setex(cacheKey, 3600, JSON.stringify(response));
+
+    successResponse(res, "Inventory fetched successfully", response);
   } catch (error) {
     errorResponse(res, "Error fetching inventory: " + error.message, 500);
   }
@@ -240,7 +263,7 @@ exports.updateBloodInventory = async (req, res) => {
         ExpiryDate: expiryDate ? new Date(expiryDate) : undefined,
       },
     });
-
+    await invalidateBloodInventoryCache();
     successResponse(
       res,
       "Blood inventory updated successfully",
@@ -264,6 +287,8 @@ exports.deleteBloodInventory = async (req, res) => {
     await prisma.bloodInventory.delete({
       where: { InventoryID: parseInt(inventoryID) },
     });
+
+    await invalidateBloodInventoryCache();
     successResponse(res, "Blood inventory deleted successfully");
   } catch (error) {
     errorResponse(res, "Error deleting blood inventory: " + error.message);
@@ -273,6 +298,17 @@ exports.deleteBloodInventory = async (req, res) => {
 exports.getTotalQuantityByTypeAndLocation = async (req, res) => {
   try {
     const { provinceName } = req.query;
+
+    const cacheKey = `bloodInventory:totalQuantity:${provinceName || "all"}`;
+    const cachedData = await redis.get(cacheKey);
+
+    if (cachedData) {
+      return successResponse(
+        res,
+        "Total quantity fetched from cache",
+        JSON.parse(cachedData)
+      );
+    }
     let provinceFilter = {};
 
     if (provinceName) {
@@ -320,6 +356,8 @@ exports.getTotalQuantityByTypeAndLocation = async (req, res) => {
         totalQuantity: aggregate ? aggregate._sum.Quantity : 0,
       };
     });
+
+    await redis.setex(cacheKey, 3600, JSON.stringify(enhancedData));
 
     successResponse(
       res,
