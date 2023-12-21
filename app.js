@@ -29,7 +29,7 @@ const bloodInventoryRoutes = require("./routes/bloodInventoryRoutes");
 const provinceRoutes = require("./routes/provinceRoutes");
 const bloodTypesRoutes = require("./routes/bloodTypesRoutes");
 const userRoutes = require("./routes/userRoutes");
-const paymentRoutes = require("./payment/routes");
+const donationRoutes = require("./routes/donationRoutes");
 
 const { sendWhatsAppMessage } = require("./services/whatsappService");
 
@@ -63,7 +63,7 @@ app.use("/blood-inventory", bloodInventoryRoutes);
 app.use("/blood-drive", authMiddleware, bloodDriveRoutes);
 app.use("/province", provinceRoutes);
 app.use("/blood-type", bloodTypesRoutes);
-app.use("/", paymentRoutes);
+app.use("/donation", donationRoutes);
 
 app.use("/user", authMiddleware, userRoutes);
 
