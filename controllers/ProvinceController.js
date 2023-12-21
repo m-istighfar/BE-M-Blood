@@ -26,7 +26,19 @@ const validateProvinceId = (data) => {
 
 exports.getAllProvinces = async (req, res) => {
   try {
+    const cacheKey = `provinces:all`;
+    const cachedProvinces = await redis.get(cacheKey);
+
+    if (cachedProvinces) {
+      return successResponse(
+        res,
+        "Provinces fetched from cache",
+        JSON.parse(cachedProvinces)
+      );
+    }
+
     const provinces = await prisma.province.findMany();
+    await redis.setex(cacheKey, 3600, JSON.stringify(provinces));
     successResponse(res, "Provinces fetched successfully", provinces);
   } catch (error) {
     errorResponse(
@@ -45,6 +57,17 @@ exports.getProvinceById = async (req, res) => {
       return errorResponse(res, validationError);
     }
 
+    const cacheKey = `province:${id}`;
+    const cachedProvince = await redis.get(cacheKey);
+
+    if (cachedProvince) {
+      return successResponse(
+        res,
+        "Province fetched from cache",
+        JSON.parse(cachedProvince)
+      );
+    }
+
     const province = await prisma.province.findUnique({
       where: { ProvinceID: parseInt(id) },
     });
@@ -53,6 +76,7 @@ exports.getProvinceById = async (req, res) => {
       return errorResponse(res, "Province not found", 404);
     }
 
+    await redis.setex(cacheKey, 3600, JSON.stringify(province));
     successResponse(res, "Province fetched successfully", province);
   } catch (error) {
     errorResponse(
