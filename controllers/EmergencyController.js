@@ -175,13 +175,13 @@ exports.getAllEmergencyRequests = async (req, res) => {
       },
     });
 
-    const totalRequests = await prisma.emergencyRequest.count({ where: where });
+    const totalRecords = await prisma.emergencyRequest.count({ where: where });
 
     successResponse(res, "Emergency requests fetched successfully", {
-      totalRequests,
+      totalRecords,
       emergencyRequests,
       currentPage: pageNumber,
-      totalPages: Math.ceil(totalRequests / pageSize),
+      totalPages: Math.ceil(totalRecords / pageSize),
     });
   } catch (error) {
     errorResponse(
