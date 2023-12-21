@@ -87,7 +87,7 @@ const totalDonations = async (req, res) => {
       },
     });
 
-    res.status(200).json({ totalDonations: total._sum.Amount });
+    res.status(200).json({ data: { totalRecords: total._sum.Amount } });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
