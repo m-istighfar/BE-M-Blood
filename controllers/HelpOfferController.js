@@ -3,6 +3,13 @@ const prisma = new PrismaClient();
 const Joi = require("joi");
 const redis = require("../config/redis");
 
+const invalidateHelpOffersCache = async () => {
+  const keys = await redis.keys("helpOffers:*");
+  keys.forEach(async (key) => {
+    await redis.del(key);
+  });
+};
+
 const successResponse = (res, message, data = null) => {
   return res.status(200).json({ message, data });
 };
@@ -55,6 +62,17 @@ exports.getAllHelpOffers = async (req, res) => {
       limit,
       orderBy,
     } = req.query;
+
+    const cacheKey = `helpOffers:all:${JSON.stringify(req.query)}`;
+    const cachedHelpOffers = await redis.get(cacheKey);
+
+    if (cachedHelpOffers) {
+      return successResponse(
+        res,
+        "Help offers fetched from cache",
+        JSON.parse(cachedHelpOffers)
+      );
+    }
 
     const pageNumber = parseInt(page) || 1;
     const pageSize = parseInt(limit) || 10;
@@ -120,13 +138,15 @@ exports.getAllHelpOffers = async (req, res) => {
     });
 
     const totalRecords = await prisma.helpOffer.count({ where: where });
-
-    successResponse(res, "Help offers fetched successfully", {
+    const response = {
       totalRecords,
       helpOffers,
       currentPage: pageNumber,
       totalPages: Math.ceil(totalRecords / pageSize),
-    });
+    };
+
+    await redis.setex(cacheKey, 3600, JSON.stringify(response));
+    successResponse(res, "Help offers fetched successfully", response);
   } catch (error) {
     errorResponse(res, "Error fetching help offers: " + error.message, 500);
   }
@@ -197,6 +217,8 @@ exports.createHelpOffer = async (req, res) => {
         Location: location,
       },
     });
+
+    await invalidateHelpOffersCache();
 
     return successResponse(
       res,
@@ -270,7 +292,7 @@ exports.updateHelpOffer = async (req, res) => {
         BloodType: true,
       },
     });
-
+    await invalidateHelpOffersCache();
     return successResponse(
       res,
       "Help offer updated successfully",
@@ -301,7 +323,7 @@ exports.deleteHelpOffer = async (req, res) => {
     await prisma.helpOffer.delete({
       where: { OfferID: parseInt(helpOfferId) },
     });
-
+    await invalidateHelpOffersCache();
     return successResponse(res, "Help offer deleted successfully", helpOffer);
   } catch (error) {
     return errorResponse(
