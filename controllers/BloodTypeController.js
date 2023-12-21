@@ -17,7 +17,19 @@ const errorResponse = (res, message, statusCode = 400) => {
 
 exports.getAllBloodTypes = async (req, res) => {
   try {
+    const cacheKey = `bloodTypes:all`;
+    const cachedBloodTypes = await redis.get(cacheKey);
+
+    if (cachedBloodTypes) {
+      return successResponse(
+        res,
+        "Blood types fetched from cache",
+        JSON.parse(cachedBloodTypes)
+      );
+    }
     const bloodTypes = await prisma.bloodType.findMany();
+
+    await redis.setex(cacheKey, 3600, JSON.stringify(bloodTypes));
     successResponse(res, "Blood types fetched successfully", bloodTypes);
   } catch (error) {
     errorResponse(
@@ -36,6 +48,17 @@ exports.getBloodTypeById = async (req, res) => {
       return errorResponse(res, validationError);
     }
 
+    const cacheKey = `bloodType:${id}`;
+    const cachedBloodType = await redis.get(cacheKey);
+
+    if (cachedBloodType) {
+      return successResponse(
+        res,
+        "Blood type fetched from cache",
+        JSON.parse(cachedBloodType)
+      );
+    }
+
     const bloodType = await prisma.bloodType.findUnique({
       where: { BloodTypeID: parseInt(id) },
     });
@@ -44,6 +67,7 @@ exports.getBloodTypeById = async (req, res) => {
       return errorResponse(res, "Blood type not found", 404);
     }
 
+    await redis.setex(cacheKey, 3600, JSON.stringify(bloodType));
     successResponse(res, "Blood type fetched successfully", bloodType);
   } catch (error) {
     errorResponse(
