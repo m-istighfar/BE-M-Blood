@@ -12,6 +12,13 @@ const errorResponse = (res, message, statusCode = 400) => {
   return res.status(statusCode).json({ error: message });
 };
 
+const invalidateAppointmentsCache = async () => {
+  const keys = await redis.keys("appointments:*");
+  keys.forEach(async (key) => {
+    await redis.del(key);
+  });
+};
+
 const validateAppointmentQuery = (data) => {
   const schema = Joi.object({
     status: Joi.string()
@@ -313,6 +320,8 @@ exports.createAppointment = async (req, res) => {
       },
     });
 
+    await invalidateAppointmentsCache();
+
     successResponse(
       res,
       "Appointment created successfully",
@@ -421,6 +430,8 @@ exports.cancelAppointment = async (req, res) => {
       },
     });
 
+    await invalidateAppointmentsCache();
+
     successResponse(
       res,
       "Appointment cancelled successfully",
@@ -473,6 +484,9 @@ exports.completeAppointment = async (req, res) => {
       },
     });
 
+    await invalidateAppointmentsCache();
+
+    await invalidateAppointmentsCache();
     successResponse(
       res,
       "Appointment completed successfully",
@@ -522,6 +536,8 @@ exports.updateAppointment = async (req, res) => {
       data: updateData,
     });
 
+    await invalidateAppointmentsCache();
+
     successResponse(
       res,
       "Appointment updated successfully",
@@ -557,6 +573,8 @@ exports.deleteAppointment = async (req, res) => {
     await prisma.appointment.delete({
       where: { AppointmentID: parseInt(appointmentId) },
     });
+
+    await invalidateAppointmentsCache();
 
     successResponse(res, "Appointment deleted successfully");
   } catch (error) {
