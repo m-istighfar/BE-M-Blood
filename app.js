@@ -54,19 +54,9 @@ applyMiddleware(app);
 app.use("/auth", authRoutes);
 app.use("/appointments", authMiddleware, appointmentRoutes);
 
-app.use(
-  "/emergency",
-  authMiddleware,
-  authorizationMiddleware(["user"]),
-  emergencyRoutes
-);
+app.use("/emergency", authMiddleware, emergencyRoutes);
 
-app.use(
-  "/help-offer",
-  authMiddleware,
-  authorizationMiddleware(["user"]),
-  helpOfferRoutes
-);
+app.use("/help-offer", authMiddleware, helpOfferRoutes);
 
 app.use("/blood-inventory", bloodInventoryRoutes);
 
