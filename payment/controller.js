@@ -1,6 +1,7 @@
 let midtransClient = require("midtrans-client");
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const { errorResponse, successResponse } = require("../utils/response");
 
 let snap = new midtransClient.Snap({
   isProduction: false,
@@ -92,4 +93,33 @@ const totalDonations = async (req, res) => {
   }
 };
 
-module.exports = { createTransaction, midtransNotification, totalDonations };
+const getAllDonations = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const donations = await prisma.donation.findMany({
+      skip: offset,
+      take: limit,
+    });
+
+    const totalRecords = await prisma.donation.count();
+
+    successResponse(res, "Donations fetched successfully", {
+      totalRecords,
+      donations,
+      currentPage: page,
+      totalPages: Math.ceil(totalRecords / limit),
+    });
+  } catch (error) {
+    errorResponse(res, "Error fetching donations: " + error.message, 500);
+  }
+};
+
+module.exports = {
+  createTransaction,
+  midtransNotification,
+  totalDonations,
+  getAllDonations,
+};

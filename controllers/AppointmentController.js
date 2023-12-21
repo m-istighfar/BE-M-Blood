@@ -549,3 +549,20 @@ exports.deleteAppointment = async (req, res) => {
     );
   }
 };
+
+exports.getTotalAppointments = async (req, res) => {
+  try {
+    const totalAppointments = await prisma.appointment.count();
+
+    successResponse(res, "Total number of appointments fetched successfully", {
+      totalAppointments,
+    });
+  } catch (error) {
+    errorResponse(
+      res,
+      "An error occurred while fetching the total number of appointments: " +
+        error.message,
+      500
+    );
+  }
+};
