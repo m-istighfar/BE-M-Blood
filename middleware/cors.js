@@ -16,5 +16,5 @@ module.exports = (app) => {
     },
   };
 
-  app.use(cors());
+  app.use(cors(corsOptions));
 };
