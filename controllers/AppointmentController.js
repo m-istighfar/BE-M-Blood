@@ -130,7 +130,7 @@ exports.getAppointments = async (req, res) => {
       };
     }
     if (location) {
-      where.location = { contains: location, mode: "insensitive" };
+      where.Location = { contains: location, mode: "insensitive" };
     }
     if (status) {
       where.Status = status;
