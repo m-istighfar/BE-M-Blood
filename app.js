@@ -4,6 +4,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const redis = require("./config/redis");
 const cron = require("node-cron");
+const cors = require("cors");
 const scheduleReminderJob = require("./jobs/reminderJob");
 
 const express = require("express");
@@ -34,6 +35,7 @@ const donationRoutes = require("./routes/donationRoutes");
 const { sendWhatsAppMessage } = require("./services/whatsappService");
 
 const app = express();
+app.use(cors());
 // app.use(cookieParser());
 applyMiddleware(app);
 
