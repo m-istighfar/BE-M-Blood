@@ -34,7 +34,7 @@ const donationRoutes = require("./routes/donationRoutes");
 const { sendWhatsAppMessage } = require("./services/whatsappService");
 
 const app = express();
-app.use(cookieParser());
+// app.use(cookieParser());
 applyMiddleware(app);
 
 // const openApiPath = "doc/openapi2.yaml";
