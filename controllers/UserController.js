@@ -39,7 +39,7 @@ const getAllUsers = async (req, res) => {
     }
     if (location) {
       where.Province = {
-        Name: { contains: provinceName, mode: "insensitive" },
+        Name: { contains: location, mode: "insensitive" },
       };
     }
 
