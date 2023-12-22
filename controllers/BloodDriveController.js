@@ -40,7 +40,7 @@ const validateBloodDriveQuery = (data) => {
 const validateCreateUpdateBloodDrive = (data) => {
   const schema = Joi.object({
     institute: Joi.string().required(),
-    provinceName: Joi.string().required(),
+    location: Joi.string().required(),
     designation: Joi.string().required(),
     scheduledDate: Joi.date().min("now").required(),
   });
@@ -58,7 +58,7 @@ exports.getAllBloodDrives = async (req, res) => {
       query,
       institute,
       scheduledDate,
-      provinceName,
+      location,
       designation,
       page,
       limit,
@@ -92,10 +92,10 @@ exports.getAllBloodDrives = async (req, res) => {
         lte: new Date(date.setHours(23, 59, 59, 999)),
       };
     }
-    if (provinceName) {
+    if (location) {
       where.Province = {
         is: {
-          Name: { contains: provinceName, mode: "insensitive" },
+          Name: { contains: location, mode: "insensitive" },
         },
       };
     }
@@ -115,7 +115,7 @@ exports.getAllBloodDrives = async (req, res) => {
           Designation: { contains: query, mode: "insensitive" },
         });
       }
-      if (searchBy === "all" || searchBy === "provinceName") {
+      if (searchBy === "all" || searchBy === "location") {
         searchConditions.push({
           Province: {
             is: {
@@ -193,7 +193,7 @@ exports.getBloodDriveById = async (req, res) => {
 exports.createBloodDrive = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { institute, provinceName, designation, scheduledDate } = req.body; // Updated to provinceName
+    const { institute, location, designation, scheduledDate } = req.body; // Updated to location
 
     const validationError = validateCreateUpdateBloodDrive(req.body);
     if (validationError) {
@@ -201,7 +201,7 @@ exports.createBloodDrive = async (req, res) => {
     }
 
     const province = await prisma.province.findFirst({
-      where: { Name: provinceName },
+      where: { Name: location },
     });
 
     if (!province) {
@@ -239,7 +239,7 @@ exports.createBloodDrive = async (req, res) => {
 exports.updateBloodDrive = async (req, res) => {
   try {
     const { bloodDriveId } = req.params;
-    const { institute, provinceName, designation, scheduledDate } = req.body;
+    const { institute, location, designation, scheduledDate } = req.body;
 
     const validationError = validateCreateUpdateBloodDrive(req.body);
     if (validationError) {
@@ -257,9 +257,9 @@ exports.updateBloodDrive = async (req, res) => {
     }
 
     let provinceId = existingBloodDrive.ProvinceID;
-    if (provinceName) {
+    if (location) {
       const province = await prisma.province.findFirst({
-        where: { Name: provinceName },
+        where: { Name: location },
       });
       if (!province) {
         return errorResponse(res, "Province not found", 404);
