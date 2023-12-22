@@ -286,6 +286,9 @@ exports.updateHelpOffer = async (req, res) => {
           canHelpInEmergency ?? existingHelpOffer.CanHelpInEmergency,
         Reason: reason ?? existingHelpOffer.Reason,
         Location: location ?? existingHelpOffer.Location,
+        BloodTypeID: bloodTypeRecord
+          ? bloodTypeRecord.BloodTypeID
+          : existingHelpOffer.BloodTypeID,
       },
       include: {
         User: true,
