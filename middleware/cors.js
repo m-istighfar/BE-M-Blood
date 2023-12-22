@@ -4,6 +4,7 @@ module.exports = (app) => {
   const allowedOrigins = [
     "http://localhost:5173",
     "https://fe-final-project-revou.vercel.app",
+    "https://tubular-pothos-13218a.netlify.app",
   ];
 
   const corsOptions = {
