@@ -14,7 +14,7 @@ const cookieParser = require("cookie-parser");
 const swaggerUi = require("swagger-ui-express");
 const yaml = require("yaml");
 const fs = require("fs");
-const OpenApiValidator = require("express-openapi-validator");
+// const OpenApiValidator = require("express-openapi-validator");
 
 const authMiddleware = require("./middleware/authenticationMiddleware");
 const authorizationMiddleware = require("./middleware/authorizationMiddleware");
@@ -39,11 +39,11 @@ app.use(cors());
 // app.use(cookieParser());
 applyMiddleware(app);
 
-// const openApiPath = "doc/openapi2.yaml";
-// const file = fs.readFileSync(openApiPath, "utf8");
-// const swaggerDocument = yaml.parse(file);
+const openApiPath = "doc/openapi2.yaml";
+const file = fs.readFileSync(openApiPath, "utf8");
+const swaggerDocument = yaml.parse(file);
 
-// app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // app.use(
 //   OpenApiValidator.middleware({
 //     apiSpec: openApiPath,
@@ -69,99 +69,9 @@ app.use("/donation", donationRoutes);
 
 app.use("/user", authMiddleware, userRoutes);
 
-// app.use(
-//   "/admin",
-//   authMiddleware,
-//   authorizationMiddleware(["admin"]),
-//   adminRoutes
-// );
-
-// app.use("/user", authMiddleware, authorizationMiddleware(["user"]), userRoutes);
-
 app.use(errorFormatter);
 
-// const accountSid = "AC0a91b703fdd066dd92f4be195bddfd24";
-// const authToken = "bc37f1c53e8937627f198483b1403a0b";
-// const client = require("twilio")(accountSid, authToken);
-
-// // Route for sending WhatsApp messages
-// app.post("/send-message", (req, res) => {
-//   const { messageBody, recipientNumber } = req.body;
-
-//   client.messages
-//     .create({
-//       body: messageBody,
-//       from: "whatsapp:+14155238886", // Your Twilio WhatsApp number
-//       to: `whatsapp:${recipientNumber}`, // Recipient's number
-//     })
-//     .then((message) => {
-//       console.log(message.sid);
-//       res.status(200).send("Message sent successfully");
-//     })
-//     .catch((error) => {
-//       console.error(error);
-//       res.status(500).send("Failed to send message");
-//     });
-// });
-// const sendRemindersForUpcomingAppointments = async () => {
-//   try {
-//     const oneHourLater = new Date(new Date().getTime() + 60 * 60 * 1000);
-
-//     const upcomingAppointments = await prisma.appointment.findMany({
-//       where: {
-//         ScheduledDate: {
-//           gte: new Date(),
-//           lt: oneHourLater,
-//         },
-//         Status: "scheduled",
-//         ReminderSent: false,
-//       },
-//       include: {
-//         User: true,
-//       },
-//     });
-
-//     for (const appointment of upcomingAppointments) {
-//       const reminderMessage = `Reminder: You have an appointment scheduled at ${appointment.ScheduledDate.toLocaleString()}.`;
-//       await sendWhatsAppMessage(appointment.User.Phone, reminderMessage);
-
-//       // Update the appointment to mark the reminder as sent
-//       await prisma.appointment.update({
-//         where: {
-//           AppointmentID: appointment.AppointmentID,
-//         },
-//         data: {
-//           ReminderSent: true,
-//         },
-//       });
-//     }
-//   } catch (error) {
-//     console.error("Error sending reminders:", error);
-//   }
-// };
-
-// const sendRemindersForUpcomingAppointments = async () => {
-//   try {
-//     const oneHourLater = new Date(new Date().getTime() + 60 * 60 * 1000);
-
-//     const upcomingAppointments = await prisma.appointment.findMany({
-//       where: {
-//         ScheduledDate: {
-//           gte: new Date(),
-//           lt: oneHourLater,
-//         },
-//         Status: "scheduled",
-//       },
-//       include: {
-//         User: true,
-//       },
-//     });
-//     console.log("Upcoming Appointments:", upcomingAppointments);
-//   } catch (error) {
-//     console.error("Error sending reminders:", error);
-//   }
-
-// scheduleReminderJob();
+scheduleReminderJob();
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}...`));
