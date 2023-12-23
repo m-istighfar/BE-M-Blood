@@ -135,6 +135,7 @@ model Donation {
   DonationID     Int       @id @default(autoincrement())
   DonorName      String
   DonorEmail     String
+  DonorPhone     String
   Amount         Float     
   Status         String    @default("pending")
   CreatedAt      DateTime  @default(now())

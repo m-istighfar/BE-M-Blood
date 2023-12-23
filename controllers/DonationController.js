@@ -2,6 +2,7 @@ let midtransClient = require("midtrans-client");
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const { errorResponse, successResponse } = require("../utils/response");
+const { sendWhatsAppMessage } = require("../services/whatsappService");
 
 let snap = new midtransClient.Snap({
   isProduction: false,
@@ -17,6 +18,7 @@ const createTransaction = async (req, res) => {
       data: {
         DonorName: firstName,
         DonorEmail: email,
+        DonorPhone: phone,
         Amount: Number(amount),
         Status: "pending",
       },
@@ -59,6 +61,15 @@ const midtransNotification = async (req, res) => {
         where: { DonationID: numericId },
         data: { Status: "success" },
       });
+
+      const donation = await prisma.donation.findUnique({
+        where: { DonationID: numericId },
+      });
+
+      if (donation) {
+        const message = `Thank you, ${donation.DonorName}, for your generous donation of ${donation.Amount}. Your support is greatly appreciated!`;
+        await sendWhatsAppMessage(donation.DonorPhone, message);
+      }
     } else if (
       transaction_status === "deny" ||
       transaction_status === "cancel" ||
