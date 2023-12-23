@@ -1,13 +1,19 @@
 const cron = require("node-cron");
 const {
-  sendRemindersForUpcomingAppointments,
+  sendHourBeforeReminders,
+  sendMorningReminders,
 } = require("../services/reminderService");
 
-const scheduleReminderJob = () => {
+const scheduleReminderJobs = () => {
   cron.schedule("* * * * *", () => {
-    console.log("Checking for upcoming appointments...");
-    sendRemindersForUpcomingAppointments();
+    console.log("Checking for hour-before appointments...");
+    sendHourBeforeReminders();
+  });
+
+  cron.schedule("0 7 * * *", () => {
+    console.log("Sending morning reminders...");
+    sendMorningReminders();
   });
 };
 
-module.exports = scheduleReminderJob;
+module.exports = scheduleReminderJobs;
